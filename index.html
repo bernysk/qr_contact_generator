@@ -82,7 +82,7 @@ input[type=range] { accent-color: var(--accent); width: 100%; }
 .preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 14px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 16px; justify-items: center; }
 .qrbox { width: 100%; max-width: 300px; aspect-ratio: 1; border-radius: 10px; overflow: hidden; display: grid; place-items: center; }
-.qrbox img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.qrbox img { width: 100%; height: 100%; display: block; }
 .who { text-align: center; display: grid; gap: 2px; min-width: 0; max-width: 100%; }
 .who strong { font-family: var(--f-display); font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
 .who span { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
@@ -166,6 +166,21 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
               <option value="M" selected>M · 15%</option>
               <option value="Q">Q · 25%</option>
               <option value="H">H · 30% (sturdiest)</option>
+            </select>
+          </label>
+        </div>
+        <div class="row">
+          <label for="dots">Dot shape
+            <select id="dots">
+              <option value="square">Square</option>
+              <option value="rounded" selected>Rounded (connected)</option>
+              <option value="dots">Dots (scans less reliably)</option>
+            </select>
+          </label>
+          <label for="eyes">Corner squares
+            <select id="eyes">
+              <option value="square">Square</option>
+              <option value="rounded" selected>Rounded</option>
             </select>
           </label>
         </div>
@@ -281,6 +296,44 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     return { w: w * r, h: h * r };
   }
 
+  // Path for every dark module in module units (offset by the quiet zone q), drawn with the even-odd rule.
+  // Corner "eyes" and modules under the logo are drawn separately or skipped.
+  const fx = (v) => +v.toFixed(3);
+  function roundRect(x, y, w, h, rad) {
+    const [tl, tr, br, bl] = Array.isArray(rad) ? rad : [rad, rad, rad, rad];
+    const a = (r, ex, ey) => (r ? "A" + r + " " + r + " 0 0 1 " : "L") + fx(ex) + " " + fx(ey);
+    return "M" + fx(x + tl) + " " + y + "H" + fx(x + w - tr) + a(tr, x + w, y + tr) + "V" + fx(y + h - br) + a(br, x + w - br, y + h) +
+      "H" + fx(x + bl) + a(bl, x, y + h - bl) + "V" + fx(y + tl) + a(tl, x + tl, y) + "Z";
+  }
+  function circle(cx, cy, r) {
+    return "M" + fx(cx - r) + " " + fx(cy) + "a" + r + " " + r + " 0 1 0 " + fx(2 * r) + " 0a" + r + " " + r + " 0 1 0 " + fx(-2 * r) + " 0Z";
+  }
+  function modulePath(qr, q) {
+    const n = qr.getModuleCount(), dot = $("dots").value, eye = $("eyes").value;
+    const L = logo ? logoBox(n) : null;
+    const inEye = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
+    const inLogo = (r, c) => L && r >= L.at && r < L.at + L.k && c >= L.at && c < L.at + L.k;
+    const on = (r, c) => r >= 0 && c >= 0 && r < n && c < n && qr.isDark(r, c) && !inEye(r, c) && !inLogo(r, c);
+    let d = "";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+      if (!on(r, c)) continue;
+      const x = c + q, y = r + q;
+      if (dot === "square") d += "M" + x + " " + y + "h1v1h-1z";
+      else if (dot === "dots") d += circle(x + 0.5, y + 0.5, 0.47);
+      else {
+        // Round a corner only where both neighbours touching it are light, so runs of modules merge into pills.
+        const up = on(r - 1, c), dn = on(r + 1, c), lf = on(r, c - 1), rt = on(r, c + 1), R = 0.5;
+        d += roundRect(x, y, 1, 1, [!up && !lf ? R : 0, !up && !rt ? R : 0, !dn && !rt ? R : 0, !dn && !lf ? R : 0]);
+      }
+    }
+    const round = eye === "rounded";
+    for (const [r, c] of [[0, 0], [0, n - 7], [n - 7, 0]]) {
+      const x = c + q, y = r + q;
+      d += roundRect(x, y, 7, 7, round ? 2.2 : 0) + roundRect(x + 1, y + 1, 5, 5, round ? 1.4 : 0) + roundRect(x + 2, y + 2, 3, 3, round ? 1 : 0);
+    }
+    return d;
+  }
+
   function build(text, ecl) {
     const qr = qrcode(0, ecl);
     qr.addData(text, "Byte");
@@ -297,8 +350,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     const g = c.getContext("2d");
     g.fillStyle = bg; g.fillRect(0, 0, size, size);
     g.fillStyle = fg;
-    for (let r = 0; r < n; r++) for (let col = 0; col < n; col++)
-      if (qr.isDark(r, col)) g.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+    g.save(); g.scale(scale, scale); g.fill(new Path2D(modulePath(qr, quiet)), "evenodd"); g.restore();
     if (logo) {
       const L = logoBox(n), x = (L.at + quiet) * scale, side = L.k * scale;
       g.fillStyle = bg;
@@ -315,9 +367,8 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
 
   function svgMarkup(qr, fg, bg) {
     const n = qr.getModuleCount(), q = 4, t = n + q * 2;
-    let d = "";
-    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
-      if (qr.isDark(r, c)) d += "M" + (c + q) + " " + (r + q) + "h1v1h-1z";
+    const d = modulePath(qr, q);
+    const crisp = $("dots").value === "square" && $("eyes").value === "square" ? ' shape-rendering="crispEdges"' : "";
     let mark = "";
     if (logo) {
       const L = logoBox(n), x = L.at + q, inner = L.k - L.pad * 2;
@@ -325,8 +376,8 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
         '<image href="' + logo.src + '" x="' + (x + L.pad) + '" y="' + (x + L.pad) + '" width="' + inner + '" height="' + inner +
         '" preserveAspectRatio="xMidYMid meet"/>';
     }
-    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + " " + t + '" shape-rendering="crispEdges">' +
-      '<rect width="100%" height="100%" fill="' + bg + '"/><path fill="' + fg + '" d="' + d + '"/>' + mark + '</svg>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + " " + t + '"' + crisp + '>' +
+      '<rect width="100%" height="100%" fill="' + bg + '"/><path fill="' + fg + '" fill-rule="evenodd" d="' + d + '"/>' + mark + '</svg>';
   }
 
   function luminance(hex) {
@@ -373,6 +424,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       [canvas.width + " px", ""],
       ratio >= 4 ? ["Contrast OK", "ok"] : ["Low contrast, may not scan", "warn"],
     ];
+    if ($("dots").value === "dots") chips.push(["Dots may not scan on every phone", "warn"]);
     if (logo) {
       const L = logoBox(n), area = Math.round((L.k * L.k) / (n * n) * 100);
       const safe = { L: 3, M: 7, Q: 12, H: 18 }[ecl];
