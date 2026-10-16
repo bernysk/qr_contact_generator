@@ -74,6 +74,9 @@ input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-
 .colors { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; }
 .colors label { grid-auto-flow: column; align-items: center; justify-content: start; gap: 8px; }
 input[type=color] { width: 36px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--field); cursor: pointer; }
+input[type=file] { font: inherit; font-size: 13px; color: var(--muted); max-width: 100%; }
+input[type=file]::file-selector-button { font: inherit; font-size: 13px; margin-right: 10px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--field); color: var(--ink); cursor: pointer; }
+input[type=range] { accent-color: var(--accent); width: 100%; }
 .hint { font-size: 12.5px; color: var(--muted); margin: 0; }
 
 .preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 14px; }
@@ -180,6 +183,16 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
         <p class="hint">vCard carries every field and works on iPhone and Android. MeCard makes a smaller, easier-to-scan code but drops job title and splits less cleanly. Keep dots dark on a light background for reliable scanning.</p>
       </fieldset>
 
+      <fieldset>
+        <legend>Logo</legend>
+        <div class="row">
+          <label for="logo">Image (PNG, JPG or SVG)<input type="file" id="logo" accept="image/*"></label>
+          <label for="logo-size">Logo width: <span id="logo-size-val">22%</span><input type="range" id="logo-size" min="10" max="30" step="1" value="22"></label>
+        </div>
+        <div class="actions"><button type="button" id="logo-remove" hidden>Remove logo</button></div>
+        <p class="hint">A logo hides part of the code, so adding one switches error correction to H. Keep it at 25% or less and test-scan before printing. The image never leaves your browser.</p>
+      </fieldset>
+
       <div class="actions">
         <button type="button" id="clear">Clear all fields</button>
       </div>
@@ -255,6 +268,18 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   }
 
   let current = { text: "", qr: null };
+  let logo = null; // { img, src }
+
+  // Logo area in module units, centered, with the same parity as the code so it sits on the grid.
+  function logoBox(n) {
+    let k = Math.round(n * (+$("logo-size").value) / 100);
+    if ((n - k) % 2) k++;
+    return { at: (n - k) / 2, k, pad: 1 };
+  }
+  function fitInside(w, h, box) {
+    const r = Math.min(box / w, box / h);
+    return { w: w * r, h: h * r };
+  }
 
   function build(text, ecl) {
     const qr = qrcode(0, ecl);
@@ -274,6 +299,17 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     g.fillStyle = fg;
     for (let r = 0; r < n; r++) for (let col = 0; col < n; col++)
       if (qr.isDark(r, col)) g.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+    if (logo) {
+      const L = logoBox(n), x = (L.at + quiet) * scale, side = L.k * scale;
+      g.fillStyle = bg;
+      g.beginPath();
+      if (g.roundRect) g.roundRect(x, x, side, side, scale); else g.rect(x, x, side, side);
+      g.fill();
+      const inner = (L.k - L.pad * 2) * scale;
+      const s = fitInside(logo.img.naturalWidth || 1, logo.img.naturalHeight || 1, inner);
+      g.imageSmoothingQuality = "high";
+      g.drawImage(logo.img, x + (side - s.w) / 2, x + (side - s.h) / 2, s.w, s.h);
+    }
     return c;
   }
 
@@ -282,8 +318,15 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     let d = "";
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
       if (qr.isDark(r, c)) d += "M" + (c + q) + " " + (r + q) + "h1v1h-1z";
+    let mark = "";
+    if (logo) {
+      const L = logoBox(n), x = L.at + q, inner = L.k - L.pad * 2;
+      mark = '<rect x="' + x + '" y="' + x + '" width="' + L.k + '" height="' + L.k + '" rx="1" fill="' + bg + '"/>' +
+        '<image href="' + logo.src + '" x="' + (x + L.pad) + '" y="' + (x + L.pad) + '" width="' + inner + '" height="' + inner +
+        '" preserveAspectRatio="xMidYMid meet"/>';
+    }
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + " " + t + '" shape-rendering="crispEdges">' +
-      '<rect width="100%" height="100%" fill="' + bg + '"/><path fill="' + fg + '" d="' + d + '"/></svg>';
+      '<rect width="100%" height="100%" fill="' + bg + '"/><path fill="' + fg + '" d="' + d + '"/>' + mark + '</svg>';
   }
 
   function luminance(hex) {
@@ -330,6 +373,11 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       [canvas.width + " px", ""],
       ratio >= 4 ? ["Contrast OK", "ok"] : ["Low contrast, may not scan", "warn"],
     ];
+    if (logo) {
+      const L = logoBox(n), area = Math.round((L.k * L.k) / (n * n) * 100);
+      const safe = { L: 3, M: 7, Q: 12, H: 18 }[ecl];
+      chips.push(area <= safe ? ["Logo covers " + area + "%", "ok"] : ["Logo covers " + area + "%, may not scan", "warn"]);
+    }
     $("meta").replaceChildren(...chips.map(([t, cls]) => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = t; return s; }));
   }
 
@@ -357,6 +405,28 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       toast("Image copied. Paste it into a document or chat.");
     } catch { toast("This browser blocked image copy. Right-click the code and choose Save image.", true); }
   });
+  $("logo").addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        logo = { img, src: reader.result };
+        $("ecl").value = "H";
+        $("logo-remove").hidden = false;
+        update();
+        toast("Logo added. Error correction set to H.");
+      };
+      img.onerror = () => toast("That file could not be read as an image. Try a PNG or JPG.", true);
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(f);
+  });
+  $("logo-remove").addEventListener("click", () => {
+    logo = null; $("logo").value = ""; $("logo-remove").hidden = true; update();
+  });
+  $("logo-size").addEventListener("input", () => { $("logo-size-val").textContent = $("logo-size").value + "%"; });
   $("clear").addEventListener("click", () => { fields.forEach((f) => ($(f).value = "")); update(); $("first").focus(); });
   $("form").addEventListener("input", update);
   $("form").addEventListener("change", update);
