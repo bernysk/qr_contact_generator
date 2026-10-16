@@ -14,7 +14,10 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 ## Privacy
 
 Everything runs in your browser. There is no server, no tracking and no external requests:
-the QR library is bundled in this repo (`qrcode.min.js`). Nothing you type is stored or sent anywhere.
+the QR library is bundled in this repo (`qrcode.min.js`). Nothing you type is sent anywhere.
+
+If you tick **Remember my details in this browser**, your fields, style choices and logo are saved in
+your browser's local storage on that device only, and filled in next time. Untick it to delete them.
 
 ## Run locally
 
