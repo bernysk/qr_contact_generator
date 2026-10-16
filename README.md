@@ -2,6 +2,8 @@
 
 Make a QR code for your contact details. Scan it with a phone camera to save the contact.
 
+**Try it: https://bernysk.github.io/qr_contact_generator/**
+
 - **vCard 3.0** (all fields, works on iPhone and Android) or **MeCard** (smaller code)
 - Name, company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
 - Error correction level, colors with contrast check, image size up to 2048 px
