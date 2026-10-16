@@ -9,7 +9,8 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 - Styles: square, rounded (connected) or dot modules, with square or rounded corner squares
 - Colors: solid, diagonal or radial gradient, and an optional separate color for the corner squares
 - Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H.
-  With a transparent PNG or SVG the code wraps around the logo's shape, or pick a square background
+  With a transparent PNG or SVG the code wraps around the logo's shape, or pick a square background.
+  Empty margins in the logo file are trimmed automatically, and wide or tall logos get a matching box
 - Print-size hint: shows the smallest width the code can be printed at, and warns when it is too dense for a business card
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text
 - English and Slovak interface (follows your browser language, switch in the top corner)
