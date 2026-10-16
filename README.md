@@ -8,7 +8,8 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 - Name, company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
 - Styles: square, rounded (connected) or dot modules, with square or rounded corner squares
 - Colors: solid, diagonal or radial gradient, and an optional separate color for the corner squares
-- Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H
+- Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H.
+  With a transparent PNG or SVG the code wraps around the logo's shape, or pick a square background
 - Print-size hint: shows the smallest width the code can be printed at, and warns when it is too dense for a business card
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text
 - English and Slovak interface (follows your browser language, switch in the top corner)

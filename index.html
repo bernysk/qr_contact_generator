@@ -238,8 +238,16 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
           <label for="logo"><span data-i18n="logoFile">Image (PNG, JPG or SVG)</span><input type="file" id="logo" accept="image/*"></label>
           <label for="logo-size"><span><span data-i18n="logoSize">Logo width:</span> <span id="logo-size-val">22%</span></span><input type="range" id="logo-size" min="10" max="30" step="1" value="22"></label>
         </div>
-        <div class="actions"><button type="button" id="logo-remove" data-i18n="logoRemove" hidden>Remove logo</button></div>
-        <p class="hint" data-i18n="logoHint">A logo hides part of the code, so adding one switches error correction to H. Keep it at 25% or less and test-scan before printing. The image never leaves your browser.</p>
+        <div class="row">
+          <label for="logo-bg"><span data-i18n="logoBg">Around the logo</span>
+            <select id="logo-bg">
+              <option value="shape" data-i18n="logoBgShape" selected>Follow the logo's shape</option>
+              <option value="square" data-i18n="logoBgSquare">Square background</option>
+            </select>
+          </label>
+          <div class="actions" style="align-items:end"><button type="button" id="logo-remove" data-i18n="logoRemove" hidden>Remove logo</button></div>
+        </div>
+        <p class="hint" data-i18n="logoHint">A logo hides part of the code, so adding one switches error correction to H. Use a PNG or SVG with a transparent background so the code can wrap around the logo's shape. Keep it at 25% or less and test-scan before printing. The image never leaves your browser.</p>
       </fieldset>
 
       <fieldset>
@@ -303,7 +311,8 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       eyeOwn: "Different color for corner squares", eyeColor: "Corner color",
       styleHint: "Keep the code dark on a light background. Gradients scan best when both colors are dark.",
       lgLogo: "Logo", logoFile: "Image (PNG, JPG or SVG)", logoSize: "Logo width:", logoRemove: "Remove logo",
-      logoHint: "A logo hides part of the code, so adding one switches error correction to H. Keep it at 25% or less and test-scan before printing. The image never leaves your browser.",
+      logoHint: "A logo hides part of the code, so adding one switches error correction to H. Use a PNG or SVG with a transparent background so the code can wrap around the logo's shape. Keep it at 25% or less and test-scan before printing. The image never leaves your browser.",
+      logoBg: "Around the logo", logoBgShape: "Follow the logo's shape", logoBgSquare: "Square background",
       lgBrowser: "This browser", remember: "Remember my details in this browser",
       rememberHint: "Saves every field, style choice and logo on this device only, so they are filled in next time you open the page. Nothing is sent anywhere. Untick to delete the saved copy.",
       clear: "Clear all fields",
@@ -344,7 +353,8 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       eyeOwn: "Iná farba rohových štvorcov", eyeColor: "Farba rohov",
       styleHint: "Kód nechajte tmavý na svetlom pozadí. Prechody sa skenujú najlepšie, keď sú obe farby tmavé.",
       lgLogo: "Logo", logoFile: "Obrázok (PNG, JPG alebo SVG)", logoSize: "Šírka loga:", logoRemove: "Odstrániť logo",
-      logoHint: "Logo zakryje časť kódu, preto sa oprava chýb prepne na H. Držte ho do 25 % a pred tlačou kód vyskúšajte. Obrázok neopustí váš prehliadač.",
+      logoHint: "Logo zakryje časť kódu, preto sa oprava chýb prepne na H. Použite PNG alebo SVG s priehľadným pozadím, aby kód obtekal tvar loga. Držte ho do 25 % a pred tlačou kód vyskúšajte. Obrázok neopustí váš prehliadač.",
+      logoBg: "Okolo loga", logoBgShape: "Podľa tvaru loga", logoBgSquare: "Štvorcové pozadie",
       lgBrowser: "Tento prehliadač", remember: "Zapamätať si moje údaje v tomto prehliadači",
       rememberHint: "Uloží všetky polia, nastavenia vzhľadu aj logo len v tomto zariadení, takže budú vyplnené aj nabudúce. Nič sa nikam neodosiela. Zrušením zaškrtnutia uloženú kópiu vymažete.",
       clear: "Vymazať všetky polia",
@@ -462,6 +472,37 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     return { w: w * r, h: h * r };
   }
 
+  // Modules hidden by the logo, as a Set of r * n + c. "square" clears the whole logo box; "shape" draws the
+  // logo at 10 px per module and clears only modules within 0.6 module of an opaque pixel, so the code hugs it.
+  let maskCache = { logo: null, key: "", cells: null };
+  function logoCells(n) {
+    const L = logoBox(n), mode = $("logo-bg").value, key = n + "|" + L.k + "|" + mode;
+    if (maskCache.logo === logo && maskCache.key === key) return maskCache.cells;
+    const cells = new Set();
+    if (mode === "square") {
+      for (let r = 0; r < L.k; r++) for (let c = 0; c < L.k; c++) cells.add((L.at + r) * n + L.at + c);
+    } else {
+      const S = 10, W = L.k * S, cv = document.createElement("canvas");
+      cv.width = cv.height = W;
+      const g = cv.getContext("2d");
+      const s = fitInside(logo.img.naturalWidth || 1, logo.img.naturalHeight || 1, (L.k - L.pad * 2) * S);
+      g.drawImage(logo.img, (W - s.w) / 2, (W - s.h) / 2, s.w, s.h);
+      const a = g.getImageData(0, 0, W, W).data, R = W + 1;
+      const P = new Uint32Array(R * R); // prefix sums of opaque pixels
+      for (let y = 0; y < W; y++) for (let x = 0; x < W; x++)
+        P[(y + 1) * R + x + 1] = (a[(y * W + x) * 4 + 3] > 40 ? 1 : 0) + P[y * R + x + 1] + P[(y + 1) * R + x] - P[y * R + x];
+      const count = (x0, y0, x1, y1) => {
+        x0 = Math.max(0, x0); y0 = Math.max(0, y0); x1 = Math.min(W, x1); y1 = Math.min(W, y1);
+        return x1 <= x0 || y1 <= y0 ? 0 : P[y1 * R + x1] - P[y0 * R + x1] - P[y1 * R + x0] + P[y0 * R + x0];
+      };
+      const m = Math.round(S * 0.6);
+      for (let r = 0; r < L.k; r++) for (let c = 0; c < L.k; c++)
+        if (count(c * S - m, r * S - m, (c + 1) * S + m, (r + 1) * S + m) > 0) cells.add((L.at + r) * n + L.at + c);
+    }
+    maskCache = { logo, key, cells };
+    return cells;
+  }
+
   // Paths for the data modules and the three corner "eyes", in module units offset by the quiet zone q.
   // Both are filled with the even-odd rule; modules under the logo are skipped.
   const fx = (v) => +v.toFixed(3);
@@ -476,9 +517,9 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   }
   function modulePaths(qr, q) {
     const n = qr.getModuleCount(), dot = $("dots").value, eye = $("eyes").value;
-    const L = logo ? logoBox(n) : null;
+    const hidden = logo ? logoCells(n) : null;
     const inEye = (r, c) => (r < 7 && c < 7) || (r < 7 && c >= n - 7) || (r >= n - 7 && c < 7);
-    const inLogo = (r, c) => L && r >= L.at && r < L.at + L.k && c >= L.at && c < L.at + L.k;
+    const inLogo = (r, c) => hidden && hidden.has(r * n + c);
     const on = (r, c) => r >= 0 && c >= 0 && r < n && c < n && qr.isDark(r, c) && !inEye(r, c) && !inLogo(r, c);
     let data = "";
     for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
@@ -536,10 +577,12 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     g.restore();
     if (logo) {
       const L = logoBox(n), x = (L.at + quiet) * scale, side = L.k * scale;
-      g.fillStyle = col.bg;
-      g.beginPath();
-      if (g.roundRect) g.roundRect(x, x, side, side, scale); else g.rect(x, x, side, side);
-      g.fill();
+      if ($("logo-bg").value === "square") {
+        g.fillStyle = col.bg;
+        g.beginPath();
+        if (g.roundRect) g.roundRect(x, x, side, side, scale); else g.rect(x, x, side, side);
+        g.fill();
+      }
       const inner = (L.k - L.pad * 2) * scale;
       const s = fitInside(logo.img.naturalWidth || 1, logo.img.naturalHeight || 1, inner);
       g.imageSmoothingQuality = "high";
@@ -564,7 +607,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     let mark = "";
     if (logo) {
       const L = logoBox(n), x = L.at + q, inner = L.k - L.pad * 2;
-      mark = '<rect x="' + x + '" y="' + x + '" width="' + L.k + '" height="' + L.k + '" rx="1" fill="' + col.bg + '"/>' +
+      mark = ($("logo-bg").value === "square" ? '<rect x="' + x + '" y="' + x + '" width="' + L.k + '" height="' + L.k + '" rx="1" fill="' + col.bg + '"/>' : "") +
         '<image href="' + logo.src + '" x="' + (x + L.pad) + '" y="' + (x + L.pad) + '" width="' + inner + '" height="' + inner +
         '" preserveAspectRatio="xMidYMid meet"/>';
     }
@@ -594,7 +637,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
 
   // ---- Remember in this browser (localStorage, every access guarded) ----
   const STORE = "contact-qr-maker:v1";
-  const OPTS = ["dots", "eyes", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size"];
+  const OPTS = ["dots", "eyes", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size", "logo-bg"];
   let logoTooBigWarned = false;
   function save() {
     if (!$("remember").checked) return;
@@ -679,7 +722,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     ];
     if ($("dots").value === "dots") chips.push([t("dotsWarn"), "warn"]);
     if (logo) {
-      const L = logoBox(n), area = Math.round((L.k * L.k) / (n * n) * 100);
+      const area = Math.round(logoCells(n).size / (n * n) * 100);
       const safe = { L: 3, M: 7, Q: 12, H: 18 }[ecl];
       chips.push(area <= safe ? [t("logoCover", { n: area }), "ok"] : [t("logoCoverWarn", { n: area }), "warn"]);
     }
