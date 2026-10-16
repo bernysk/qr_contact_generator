@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Make a QR code for your contact details (vCard or MeCard). Runs entirely in your browser.">
+<title>Contact QR Maker</title>
+<script src="qrcode.min.js"></script>
+<style>
+/* Layout: form on the left, a sticky "business card" preview with the live code on the right; stacks on phones. */
+:root {
+  --bg: #eceff3;
+  --surface: #ffffff;
+  --ink: #15202b;
+  --muted: #5b6876;
+  --line: #d3d9e1;
+  --accent: #1747c4;
+  --accent-ink: #ffffff;
+  --field: #f7f9fb;
+  --ok: #0f7a4a;
+  --warn: #b4410f;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10161d; --surface: #18212b; --ink: #e6ebf1; --muted: #93a1b0; --line: #2b3744;
+    --accent: #6f98ff; --accent-ink: #0b1220; --field: #121a23; --ok: #4fc78f; --warn: #ff9a6b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10161d; --surface: #18212b; --ink: #e6ebf1; --muted: #93a1b0; --line: #2b3744;
+  --accent: #6f98ff; --accent-ink: #0b1220; --field: #121a23; --ok: #4fc78f; --warn: #ff9a6b;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; display: grid; gap: 24px; }
+header h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; margin: 0 0 6px; letter-spacing: -0.01em; text-wrap: balance; }
+header p { margin: 0; color: var(--muted); max-width: 62ch; }
+.grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 820px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 20px; min-width: 0; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width: 0; }
+legend { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0; margin-bottom: 10px; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.row.three { grid-template-columns: 2fr 1fr 1.4fr; }
+@media (max-width: 480px) { .row, .row.three { grid-template-columns: minmax(0, 1fr); } }
+label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; min-width: 0; }
+input[type=text], input[type=email], input[type=tel], input[type=url], textarea, select {
+  font: inherit; font-size: 14.5px; color: var(--ink); background: var(--field);
+  border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; min-width: 0;
+}
+textarea { resize: vertical; min-height: 60px; }
+input:focus-visible, textarea:focus-visible, select:focus-visible, button:focus-visible, .seg input:focus-visible + span {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; width: fit-content; max-width: 100%; }
+.seg label { display: block; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg span { display: block; padding: 7px 12px; font-size: 13px; cursor: pointer; background: var(--field); color: var(--muted); }
+.seg input:checked + span { background: var(--accent); color: var(--accent-ink); }
+.colors { display: flex; gap: 16px; flex-wrap: wrap; align-items: end; }
+.colors label { grid-auto-flow: column; align-items: center; justify-content: start; gap: 8px; }
+input[type=color] { width: 36px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 2px; background: var(--field); cursor: pointer; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 0; }
+
+.preview { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 16px); display: grid; gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 20px; display: grid; gap: 16px; justify-items: center; }
+.qrbox { width: 100%; max-width: 300px; aspect-ratio: 1; border-radius: 10px; overflow: hidden; display: grid; place-items: center; }
+.qrbox img { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+.who { text-align: center; display: grid; gap: 2px; min-width: 0; max-width: 100%; }
+.who strong { font-family: var(--f-display); font-size: 20px; font-weight: 600; overflow-wrap: anywhere; }
+.who span { color: var(--muted); font-size: 13.5px; overflow-wrap: anywhere; }
+.meta { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.chip { font-family: var(--f-mono); font-size: 11.5px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); font-variant-numeric: tabular-nums; }
+.chip.ok { color: var(--ok); border-color: currentColor; }
+.chip.warn { color: var(--warn); border-color: currentColor; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+button {
+  font: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; border-radius: 8px; padding: 8px 14px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+button:hover { filter: brightness(0.96); }
+.toast { font-size: 13px; color: var(--ok); min-height: 1.5em; margin: 0; }
+details { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 16px; min-width: 0; }
+summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
+pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 10px 0 0; overflow-x: auto; white-space: pre; }
+.err { color: var(--warn); font-size: 13.5px; text-align: center; padding: 16px; }
+@media (prefers-reduced-motion: no-preference) { button { transition: filter .15s; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <h1>Contact QR Maker</h1>
+    <p>Fill in your details and scan the code with a phone camera to save the contact. The fields below hold an example; replace them with your own. Nothing leaves this page.</p>
+  </header>
+
+  <div class="grid">
+    <form class="panel" id="form" autocomplete="off">
+      <fieldset>
+        <legend>Name</legend>
+        <div class="row">
+          <label for="first">First name<input type="text" id="first" value="Jana"></label>
+          <label for="last">Last name<input type="text" id="last" value="Nováková"></label>
+        </div>
+        <div class="row">
+          <label for="org">Company<input type="text" id="org" value="Example Studio s.r.o."></label>
+          <label for="title">Job title<input type="text" id="title" value="Project Manager"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Reach</legend>
+        <div class="row">
+          <label for="cell">Mobile<input type="tel" id="cell" value="+421 900 123 456"></label>
+          <label for="work">Work phone<input type="tel" id="work" value=""></label>
+        </div>
+        <div class="row">
+          <label for="email">Email<input type="email" id="email" value="jana@example.com"></label>
+          <label for="url">Website<input type="url" id="url" value="https://example.com"></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Address</legend>
+        <label for="street">Street<input type="text" id="street" value="Hlavná 12"></label>
+        <div class="row three">
+          <label for="city">City<input type="text" id="city" value="Bratislava"></label>
+          <label for="zip">Postal code<input type="text" id="zip" value="811 01"></label>
+          <label for="country">Country<input type="text" id="country" value="Slovakia"></label>
+        </div>
+        <label for="note">Note<textarea id="note" rows="2"></textarea></label>
+      </fieldset>
+
+      <fieldset>
+        <legend>Code</legend>
+        <div class="row">
+          <div style="display:grid;gap:4px">
+            <span style="font-size:13px;font-weight:500">Format</span>
+            <div class="seg" role="radiogroup" aria-label="Format">
+              <label><input type="radio" name="fmt" id="fmt-vcard" value="vcard" checked><span>vCard</span></label>
+              <label><input type="radio" name="fmt" id="fmt-mecard" value="mecard"><span>MeCard</span></label>
+            </div>
+          </div>
+          <label for="ecl">Error correction
+            <select id="ecl">
+              <option value="L">L · 7% (smallest)</option>
+              <option value="M" selected>M · 15%</option>
+              <option value="Q">Q · 25%</option>
+              <option value="H">H · 30% (sturdiest)</option>
+            </select>
+          </label>
+        </div>
+        <div class="colors">
+          <label for="fg">Dots<input type="color" id="fg" value="#000000"></label>
+          <label for="bg">Background<input type="color" id="bg" value="#ffffff"></label>
+          <label for="px" style="grid-auto-flow:row">Image size
+            <select id="px">
+              <option value="512">512 px</option>
+              <option value="1024" selected>1024 px</option>
+              <option value="2048">2048 px (print)</option>
+            </select>
+          </label>
+        </div>
+        <p class="hint">vCard carries every field and works on iPhone and Android. MeCard makes a smaller, easier-to-scan code but drops job title and splits less cleanly. Keep dots dark on a light background for reliable scanning.</p>
+      </fieldset>
+
+      <div class="actions">
+        <button type="button" id="clear">Clear all fields</button>
+      </div>
+    </form>
+
+    <aside class="preview">
+      <div class="card">
+        <div class="qrbox" id="qrbox"></div>
+        <div class="who">
+          <strong id="who-name"></strong>
+          <span id="who-sub"></span>
+        </div>
+        <div class="meta" id="meta"></div>
+        <div class="actions" style="justify-content:center">
+          <button type="button" class="primary" id="copy-img">Copy image</button>
+          <button type="button" id="copy-svg">Copy SVG</button>
+          <button type="button" id="copy-text">Copy contact text</button>
+        </div>
+        <p class="toast" id="toast" role="status" aria-live="polite"></p>
+        <p class="hint" style="text-align:center">To save the PNG, right-click the code (or long-press on a phone) and choose Save image.</p>
+      </div>
+      <details>
+        <summary>Encoded text</summary>
+        <pre id="payload"></pre>
+      </details>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const fields = ["first","last","org","title","cell","work","email","url","street","city","zip","country","note"];
+  if (window.qrcode && qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) {
+    qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
+  }
+
+  const v = () => Object.fromEntries(fields.map((f) => [f, $(f).value.trim()]));
+  const escV = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  const escM = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\n/g, " ");
+  const tel = (s) => s.replace(/[^\d+]/g, "");
+
+  function vcard(d) {
+    const L = ["BEGIN:VCARD", "VERSION:3.0"];
+    L.push("N:" + [escV(d.last), escV(d.first), "", "", ""].join(";"));
+    L.push("FN:" + escV([d.first, d.last].filter(Boolean).join(" ") || d.org || "Contact"));
+    if (d.org) L.push("ORG:" + escV(d.org));
+    if (d.title) L.push("TITLE:" + escV(d.title));
+    if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
+    if (d.work) L.push("TEL;TYPE=WORK,VOICE:" + tel(d.work));
+    if (d.email) L.push("EMAIL;TYPE=INTERNET:" + d.email);
+    if (d.url) L.push("URL:" + d.url);
+    if (d.street || d.city || d.zip || d.country)
+      L.push("ADR;TYPE=WORK:" + ["", "", escV(d.street), escV(d.city), "", escV(d.zip), escV(d.country)].join(";"));
+    if (d.note) L.push("NOTE:" + escV(d.note));
+    L.push("END:VCARD");
+    return L.join("\r\n");
+  }
+
+  function mecard(d) {
+    const p = [];
+    const name = [d.last, d.first].filter(Boolean).join(",");
+    p.push("N:" + escM(name || d.org || "Contact"));
+    if (d.org) p.push("ORG:" + escM(d.org));
+    if (d.cell) p.push("TEL:" + tel(d.cell));
+    if (d.work) p.push("TEL:" + tel(d.work));
+    if (d.email) p.push("EMAIL:" + escM(d.email));
+    if (d.url) p.push("URL:" + escM(d.url));
+    const adr = [d.street, [d.zip, d.city].filter(Boolean).join(" "), d.country].filter(Boolean).join(", ");
+    if (adr) p.push("ADR:" + escM(adr));
+    if (d.note) p.push("NOTE:" + escM(d.note));
+    return "MECARD:" + p.join(";") + ";;";
+  }
+
+  let current = { text: "", qr: null };
+
+  function build(text, ecl) {
+    const qr = qrcode(0, ecl);
+    qr.addData(text, "Byte");
+    qr.make();
+    return qr;
+  }
+
+  function renderCanvas(qr, px, fg, bg) {
+    const n = qr.getModuleCount(), quiet = 4, total = n + quiet * 2;
+    const scale = Math.max(1, Math.floor(px / total));
+    const size = scale * total;
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    g.fillStyle = bg; g.fillRect(0, 0, size, size);
+    g.fillStyle = fg;
+    for (let r = 0; r < n; r++) for (let col = 0; col < n; col++)
+      if (qr.isDark(r, col)) g.fillRect((col + quiet) * scale, (r + quiet) * scale, scale, scale);
+    return c;
+  }
+
+  function svgMarkup(qr, fg, bg) {
+    const n = qr.getModuleCount(), q = 4, t = n + q * 2;
+    let d = "";
+    for (let r = 0; r < n; r++) for (let c = 0; c < n; c++)
+      if (qr.isDark(r, c)) d += "M" + (c + q) + " " + (r + q) + "h1v1h-1z";
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + t + " " + t + '" shape-rendering="crispEdges">' +
+      '<rect width="100%" height="100%" fill="' + bg + '"/><path fill="' + fg + '" d="' + d + '"/></svg>';
+  }
+
+  function luminance(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
+    return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+  }
+
+  function update() {
+    const d = v();
+    const fmt = document.querySelector('input[name="fmt"]:checked').value;
+    const text = fmt === "vcard" ? vcard(d) : mecard(d);
+    const ecl = $("ecl").value, fg = $("fg").value, bg = $("bg").value, px = +$("px").value;
+    const box = $("qrbox");
+    $("payload").textContent = text;
+    $("who-name").textContent = [d.first, d.last].filter(Boolean).join(" ") || d.org || "No name yet";
+    $("who-sub").textContent = [d.title, d.org].filter(Boolean).join(" · ") || d.email || "";
+    box.style.background = bg;
+
+    if (!window.qrcode) { box.innerHTML = '<p class="err">The QR library did not load. Check your connection and reload.</p>'; return; }
+    let qr;
+    try { qr = build(text, ecl); }
+    catch (e) {
+      current = { text, qr: null };
+      box.innerHTML = '<p class="err">Too much text for one code. Shorten the note or pick a lower error correction level.</p>';
+      $("meta").innerHTML = "";
+      return;
+    }
+    current = { text, qr };
+    const canvas = renderCanvas(qr, px, fg, bg);
+    const img = new Image();
+    img.alt = "QR code for " + $("who-name").textContent;
+    img.src = canvas.toDataURL("image/png");
+    box.replaceChildren(img);
+    current.canvas = canvas;
+
+    const bytes = new TextEncoder().encode(text).length;
+    const n = qr.getModuleCount();
+    const ratio = (luminance(bg) + 0.05) / (luminance(fg) + 0.05);
+    const chips = [
+      ["Version " + ((n - 17) / 4), ""],
+      [n + "×" + n + " modules", ""],
+      [bytes + " bytes", ""],
+      [canvas.width + " px", ""],
+      ratio >= 4 ? ["Contrast OK", "ok"] : ["Low contrast, may not scan", "warn"],
+    ];
+    $("meta").replaceChildren(...chips.map(([t, cls]) => { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = t; return s; }));
+  }
+
+  let toastT;
+  function toast(msg, bad) {
+    const t = $("toast");
+    t.textContent = msg; t.style.color = bad ? "var(--warn)" : "var(--ok)";
+    clearTimeout(toastT); toastT = setTimeout(() => (t.textContent = ""), 2600);
+  }
+  async function copyText(s, label) {
+    try { await navigator.clipboard.writeText(s); toast(label + " copied"); }
+    catch { $("payload").closest("details").open = true; const r = document.createRange(); r.selectNodeContents($("payload")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Copy was blocked. The text is selected below; press Ctrl+C.", true); }
+  }
+
+  $("copy-text").addEventListener("click", () => copyText(current.text, "Contact text"));
+  $("copy-svg").addEventListener("click", () => {
+    if (!current.qr) return toast("Nothing to copy yet", true);
+    copyText(svgMarkup(current.qr, $("fg").value, $("bg").value), "SVG");
+  });
+  $("copy-img").addEventListener("click", async () => {
+    if (!current.canvas) return toast("Nothing to copy yet", true);
+    try {
+      const blob = new Promise((res) => current.canvas.toBlob(res, "image/png"));
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      toast("Image copied. Paste it into a document or chat.");
+    } catch { toast("This browser blocked image copy. Right-click the code and choose Save image.", true); }
+  });
+  $("clear").addEventListener("click", () => { fields.forEach((f) => ($(f).value = "")); update(); $("first").focus(); });
+  $("form").addEventListener("input", update);
+  $("form").addEventListener("change", update);
+  $("form").addEventListener("submit", (e) => e.preventDefault());
+  update();
+})();
+</script>
+</body>
+</html>
