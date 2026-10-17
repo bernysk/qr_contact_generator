@@ -437,6 +437,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       phoneAs: "In the code as {num}", phoneBad: "Check this number: it looks too short or too long for a phone number.",
       emailBad: "Check the email: it needs an @ and a domain, like name@example.com.", urlBad: "Check the website: it needs a domain, like example.com.",
       fieldsWarn: "Check the highlighted fields",
+      zipFailed: "Couldn't build the ZIP. Try fewer contacts or a smaller image size.", pngFailed: "Couldn't create the PNG. Try a smaller image size.",
+      fileReadFailed: "That file couldn't be read. Check that it isn't open in another program and try again.",
       lgBatch: "Several contacts",
       batchHint: "Make codes for a whole team: fill in the CSV template in Excel or Google Sheets, import it, and download every code at once in the current style.",
       csvTemplate: "Download CSV template", csvTemplateCopy: "Copy CSV template", csvImport: "Import CSV", listAdd: "Add form to list",
@@ -508,6 +510,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       phoneAs: "V kóde ako {num}", phoneBad: "Skontrolujte číslo: na telefónne číslo je príliš krátke alebo príliš dlhé.",
       emailBad: "Skontrolujte e-mail: potrebuje @ a doménu, napr. meno@example.com.", urlBad: "Skontrolujte web: potrebuje doménu, napr. example.com.",
       fieldsWarn: "Skontrolujte zvýraznené polia",
+      zipFailed: "ZIP sa nepodarilo vytvoriť. Skúste menej kontaktov alebo menšiu veľkosť obrázka.", pngFailed: "PNG sa nepodarilo vytvoriť. Skúste menšiu veľkosť obrázka.",
+      fileReadFailed: "Súbor sa nepodarilo načítať. Skontrolujte, či nie je otvorený v inom programe, a skúste to znova.",
       lgBatch: "Viac kontaktov",
       batchHint: "Kódy pre celý tím: vyplňte šablónu CSV v Exceli alebo Google Sheets, importujte ju a stiahnite všetky kódy naraz v aktuálnom štýle.",
       csvTemplate: "Stiahnuť šablónu CSV", csvTemplateCopy: "Kopírovať šablónu CSV", csvImport: "Importovať CSV", listAdd: "Pridať formulár do zoznamu",
@@ -595,8 +599,13 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   // vCard text without escapes. Google's "Add to contacts" (Pixel camera) doesn't decode vCard escapes and shows
   // "\," "\;" "\n" literally, so instead of escaping, the characters that would need it are replaced: a backslash
   // becomes "/", a line break ", " and a semicolon ","; commas stay plain. iPhone and other readers accept this too.
-  const plain = (s) => s.replace(/\\/g, "/").replace(/\s*\n\s*/g, ", ").replace(/;/g, ",");
-  const escM = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\n/g, " ");
+  // Line breaks (\r, \n or both) and other control characters never reach the code as such: a line break would end the
+  // vCard line and let the rest of the value start a new property (e.g. an extra TEL from a crafted CSV cell).
+  const CONTROL = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g;
+  const plain = (s) => s.replace(CONTROL, "").replace(/\\/g, "/").replace(/\s*[\r\n]+\s*/g, ", ").replace(/;/g, ",");
+  // Email and website are single tokens: drop all whitespace and control characters.
+  const token = (s) => s.replace(CONTROL, "").replace(/\s+/g, "");
+  const escM = (s) => s.replace(CONTROL, "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\s*[\r\n]+\s*/g, " ");
   const tel = (s) => phone(s).e164 || s.replace(/[^\d+]/g, "");
 
   // ---- Phone numbers: local numbers get the chosen country's code, so they work when dialled from abroad ----
@@ -754,8 +763,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     if (d.title) L.push("TITLE:" + plain(d.title));
     if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
     if (d.work) L.push("TEL;TYPE=WORK,VOICE:" + tel(d.work));
-    if (d.email) L.push("EMAIL;TYPE=INTERNET:" + d.email);
-    if (d.url) L.push("URL:" + fullUrl(d.url));
+    if (d.email) L.push("EMAIL;TYPE=INTERNET:" + token(d.email));
+    if (d.url) L.push("URL:" + fullUrl(token(d.url)));
     if (d.street || d.city || d.zip || d.country)
       L.push("ADR;TYPE=WORK:" + ["", "", plain(d.street), plain(d.city), "", plain(d.zip), plain(d.country)].join(";"));
     if (d.note) L.push("NOTE:" + plain(d.note));
@@ -765,13 +774,14 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   function mecard(d) {
     const p = [];
-    const name = [d.last, d.first].filter(Boolean).join(",");
-    p.push("N:" + escM(name || d.org || "Contact"));
+    // MeCard N is "surname,first name": escape each part, but the comma between them is the separator.
+    const name = [d.last, d.first].filter(Boolean).map(escM).join(",");
+    p.push("N:" + (name || escM(d.org || "Contact")));
     if (d.org) p.push("ORG:" + escM(d.org));
     if (d.cell) p.push("TEL:" + tel(d.cell));
     if (d.work) p.push("TEL:" + tel(d.work));
-    if (d.email) p.push("EMAIL:" + escM(d.email));
-    if (d.url) p.push("URL:" + escM(fullUrl(d.url)));
+    if (d.email) p.push("EMAIL:" + escM(token(d.email)));
+    if (d.url) p.push("URL:" + escM(fullUrl(token(d.url))));
     const adr = [d.street, [d.zip, d.city].filter(Boolean).join(" "), d.country].filter(Boolean).join(", ");
     if (adr) p.push("ADR:" + escM(adr));
     if (d.note) p.push("NOTE:" + escM(d.note));
@@ -1073,23 +1083,40 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       } catch { toast(t("saveBlocked"), true); }
     }
   }
+  // Put a saved value back only if the control accepts it: a menu value must be one of its options, a slider value a
+  // number in range. Anything else keeps the control's default.
+  function setSaved(el, value) {
+    const s = String(value);
+    if (el.tagName === "SELECT") { if ([...el.options].some((o) => o.value === s)) el.value = s; }
+    else if (el.type === "range") { const n = Number(s); if (Number.isFinite(n) && n >= +el.min && n <= +el.max) el.value = s; }
+    else if (el.type === "color") { if (/^#[0-9a-f]{6}$/i.test(s)) el.value = s; }
+    else el.value = s;
+  }
   function restore() {
     let data = null;
     try { data = JSON.parse(localStorage.getItem(STORE) || "null"); } catch { data = null; }
-    if (!data || !data.fields) return;
-    $("remember").checked = true;
-    fields.forEach((f) => { if (typeof data.fields[f] === "string") $(f).value = data.fields[f]; });
-    OPTS.forEach((id) => { if (data.opts && data.opts[id] != null) $(id).value = data.opts[id]; });
-    $("eyeown").checked = !!data.eyeown;
-    if (typeof data.phoneConv === "boolean") $("phoneconv").checked = data.phoneConv;
-    if (typeof data.zipVcf === "boolean") $("zip-vcf").checked = data.zipVcf;
-    if (Array.isArray(data.list)) list = data.list.filter((c) => c && typeof c === "object");
-    // Older saves had one "eyes" setting for the whole corner; use it for the center too.
-    if (data.opts && data.opts.eyedot == null && data.opts.eyes) $("eyedot").value = data.opts.eyes;
-    const radio = document.querySelector('input[name="fmt"][value="' + data.fmt + '"]');
-    if (radio) radio.checked = true;
-    if (data.logo) {
-      loadLogo(data.logo, (l) => { logo = l; $("logo-remove").hidden = false; update(); }, () => {});
+    if (!data || typeof data !== "object" || !data.fields || typeof data.fields !== "object") return;
+    try {
+      $("remember").checked = true;
+      fields.forEach((f) => { if (typeof data.fields[f] === "string") $(f).value = data.fields[f]; });
+      const opts = data.opts && typeof data.opts === "object" ? data.opts : {};
+      OPTS.forEach((id) => { if (opts[id] != null) setSaved($(id), opts[id]); });
+      $("eyeown").checked = !!data.eyeown;
+      if (typeof data.phoneConv === "boolean") $("phoneconv").checked = data.phoneConv;
+      if (typeof data.zipVcf === "boolean") $("zip-vcf").checked = data.zipVcf;
+      if (Array.isArray(data.list)) list = data.list.filter((c) => c && typeof c === "object").map(clean);
+      // Older saves had one "eyes" setting for the whole corner; use it for the center too.
+      if (opts.eyedot == null && opts.eyes != null) setSaved($("eyedot"), opts.eyes);
+      const radio = [...document.querySelectorAll('input[name="fmt"]')].find((r) => r.value === data.fmt);
+      if (radio) radio.checked = true;
+      if (typeof data.logo === "string" && data.logo.startsWith("data:image/")) {
+        loadLogo(data.logo, (l) => { logo = l; $("logo-remove").hidden = false; update(); }, () => {});
+      }
+    } catch {
+      // A save this version can't read must not stop the page from starting: drop it and use the defaults.
+      try { localStorage.removeItem(STORE); } catch {}
+      $("remember").checked = false;
+      list = [];
     }
   }
 
@@ -1230,7 +1257,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     $("copy-img").classList.remove("primary");
     $("dl-png").addEventListener("click", () => {
       if (!current.canvas) return toast(t("nothing"), true);
-      current.canvas.toBlob((b) => b && download(baseName() + "-qr.png", b), "image/png");
+      current.canvas.toBlob((b) => (b ? download(baseName() + "-qr.png", b) : toast(t("pngFailed"), true)), "image/png");
     });
     $("dl-svg").addEventListener("click", () => {
       if (!current.qr) return toast(t("nothing"), true);
@@ -1316,7 +1343,9 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   // ---- Contact list, CSV import/export ----
   const formValues = () => Object.fromEntries(fields.map((f) => [f, $(f).value]));
-  const clean = (c) => Object.fromEntries(fields.map((f) => [f, String(c[f] || "").trim()]));
+  // Every field except the note is one line, the same as typing it into the form would give.
+  const oneLine = (f, s) => (f === "note" ? s : s.replace(CONTROL, "").replace(/\s*[\r\n]+\s*/g, " "));
+  const clean = (c) => Object.fromEntries(fields.map((f) => [f, oneLine(f, String(c[f] || "")).trim()]));
   // CSV column names, in template order. Imports also accept common English and Slovak header names.
   const CSV_COLS = [["tbefore", "title_before"], ["first", "first_name"], ["last", "last_name"], ["tafter", "title_after"], ["org", "company"], ["title", "job_title"], ["cell", "mobile"],
     ["work", "work_phone"], ["email", "email"], ["url", "website"], ["street", "street"], ["city", "city"], ["zip", "postal_code"],
@@ -1353,11 +1382,15 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   function csvToContacts(text) {
     const rows = parseCsv(text);
     if (!rows.length) return { error: "csvEmpty" };
-    const map = rows[0].map((h) => { const k = normHead(h); return fields.find((f) => ALIASES[f].includes(k)) || null; });
+    const heads = rows[0].map(normHead);
+    // Outlook and Google exports have both "Title" (Mr., Dr., Ing.) and "Job Title"; there "Title" is the title before the name.
+    const hasJobTitle = heads.some((k) => k !== "title" && ALIASES.title.includes(k));
+    const map = heads.map((k) => (k === "title" && hasJobTitle ? "tbefore" : fields.find((f) => ALIASES[f].includes(k)) || null));
     if (!map.some(Boolean)) return { error: "csvBad" };
     const contacts = rows.slice(1).map((r) => {
       const c = Object.fromEntries(fields.map((f) => [f, ""]));
-      map.forEach((f, i) => { if (f && r[i] != null) c[f] = r[i].trim(); });
+      // When several columns feed the same field, an empty one never wipes a value an earlier column filled.
+      map.forEach((f, i) => { const val = r[i] == null ? "" : oneLine(f, r[i]).trim(); if (f && (val || !c[f])) c[f] = val; });
       return c;
     }).filter((c) => fields.some((f) => c[f]));
     return contacts.length ? { contacts } : { error: "csvEmpty" };
@@ -1423,6 +1456,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       selectContact(list.length - res.contacts.length);
       toast(t("imported", { n: res.contacts.length }));
     };
+    reader.onerror = () => { e.target.value = ""; toast(t("fileReadFailed"), true); };
     reader.readAsText(f, "utf-8");
   });
   async function copyPlain(s, msg) {
@@ -1505,6 +1539,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       if (skipped) notes.push(t("zipSkipped", { n: skipped }));
       if (failed.length) notes.push(t("zipScanFail", { n: failed.length, names: failed.join(", ") }));
       if (notes.length) setTimeout(() => toast(notes.join(" "), true, 10000), 1500);
+    } catch {
+      toast(t("zipFailed"), true, 8000);
     } finally { btn.disabled = false; }
   });
   if (!ALLOW_DOWNLOAD) {
@@ -1536,6 +1572,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       update();
       toast(t("logoAdded"));
     }, () => toast(t("logoBad"), true));
+    reader.onerror = () => toast(t("fileReadFailed"), true);
     reader.readAsDataURL(f);
   });
   $("logo-remove").addEventListener("click", () => {
