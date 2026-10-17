@@ -22,7 +22,8 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
   shown next to the code; the ZIP export lists any codes that fail
 - Field checks: phone numbers get the chosen country's code (e.g. `0905 333 444` becomes `+421 905 333 444`).
   All 245 calling codes from Wikipedia's list, grouped by ITU zone, with flags; the address country is
-  suggested at the top of the list but never changes the choice by itself,
+  suggested at the top of the list but never changes the choice by itself. The conversion can be switched off
+  to keep numbers exactly as typed,
   and emails, websites and numbers that look wrong are highlighted
 - Print-size hint: shows the smallest width the code can be printed at, and warns when it is too dense for a business card
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text

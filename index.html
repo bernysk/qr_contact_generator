@@ -187,7 +187,10 @@ input[aria-invalid="true"] { border-color: var(--warn); }
         </div>
         <div class="row">
           <label for="phonecc"><span data-i18n="phonecc">Phone numbers from</span><select id="phonecc"></select></label>
-          <p class="hint" style="align-self:end" data-i18n="phoneccHint">Numbers without a country code get this one, so they also work when dialled from abroad.</p>
+          <div style="display:grid;gap:4px;align-self:end">
+            <label class="check" for="phoneconv"><input type="checkbox" id="phoneconv" checked><span data-i18n="phoneConv">Add the country code to local numbers</span></label>
+            <p class="hint" data-i18n="phoneccHint">Numbers without a country code get this one, so they also work when dialled from abroad.</p>
+          </div>
         </div>
         <div class="row">
           <label for="email"><span data-i18n="email">Email</span><input type="email" id="email" value="jana@example.com" aria-describedby="email-msg"><small class="field-msg" id="email-msg" hidden></small></label>
@@ -409,6 +412,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanPending: "Checking that it scans…", scanOk: "Scan check: reads at all {m} test sizes", scanSome: "Scan check: fails at some sizes ({n} of {m} read)",
       scanFail: "Scan check: does not read", zipScanFail: "Failed the scan check ({n}): {names}. Shorten their details or print them larger.",
       phonecc: "Phone numbers from", phoneccHint: "Numbers without a country code get this one, so they also work when dialled from abroad.",
+      phoneConv: "Add the country code to local numbers", phoneConvOff: "Numbers go into the code exactly as typed, without spaces.",
       suggested: "Suggested", fromAddress: "address country", zone1: "1 · North America and Caribbean", zone2: "2 · Africa and Atlantic islands",
       zone34: "3–4 · Europe", zone5: "5 · Central and South America", zone6: "6 · Southeast Asia and Oceania", zone7: "7 · Russia and Kazakhstan",
       zone8: "8 · East Asia", zone9: "9 · Middle East, Central and South Asia",
@@ -478,6 +482,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanPending: "Kontroluje sa načítanie…", scanOk: "Kontrola: načíta sa vo všetkých {m} veľkostiach", scanSome: "Kontrola: niektoré veľkosti zlyhali ({n} z {m} sa načítalo)",
       scanFail: "Kontrola: kód sa nenačíta", zipScanFail: "Kontrolou neprešli ({n}): {names}. Skráťte ich údaje alebo ich tlačte väčšie.",
       phonecc: "Telefónne čísla z krajiny", phoneccHint: "Čísla bez predvoľby dostanú túto, aby fungovali aj pri volaní zo zahraničia.",
+      phoneConv: "Pridať k miestnym číslam predvoľbu krajiny", phoneConvOff: "Čísla idú do kódu presne tak, ako sú napísané, bez medzier.",
       suggested: "Navrhované", fromAddress: "krajina z adresy", zone1: "1 · Severná Amerika a Karibik", zone2: "2 · Afrika a atlantické ostrovy",
       zone34: "3–4 · Európa", zone5: "5 · Stredná a Južná Amerika", zone6: "6 · Juhovýchodná Ázia a Oceánia", zone7: "7 · Rusko a Kazachstan",
       zone8: "8 · Východná Ázia", zone9: "9 · Blízky východ, Stredná a Južná Ázia",
@@ -656,6 +661,11 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     const input = String(raw || "").trim();
     let s = input.replace(/[^\d+]/g, "");
     if (!s) return {};
+    // Conversion switched off: keep the number as typed (only spaces and punctuation removed in the code).
+    if (!$("phoneconv").checked) {
+      const digits = s.replace(/\+/g, "").length;
+      return { e164: s, pretty: input, ok: digits >= 6 && digits <= 15 };
+    }
     let cc, skip; // skip = digits of the typed prefix (00, country code or trunk) before the national number
     if (s.startsWith("+") || s.startsWith("00")) {
       const intl = s.replace(/^\+|^00/, "").replace(/\+/g, "");
@@ -1008,6 +1018,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       opts: Object.fromEntries(OPTS.map((id) => [id, $(id).value])),
       eyeown: $("eyeown").checked,
       zipVcf: $("zip-vcf").checked,
+      phoneConv: $("phoneconv").checked,
       list,
       logo: logo ? logo.src : null,
     };
@@ -1028,6 +1039,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     fields.forEach((f) => { if (typeof data.fields[f] === "string") $(f).value = data.fields[f]; });
     OPTS.forEach((id) => { if (data.opts && data.opts[id] != null) $(id).value = data.opts[id]; });
     $("eyeown").checked = !!data.eyeown;
+    if (typeof data.phoneConv === "boolean") $("phoneconv").checked = data.phoneConv;
     if (typeof data.zipVcf === "boolean") $("zip-vcf").checked = data.zipVcf;
     if (Array.isArray(data.list)) list = data.list.filter((c) => c && typeof c === "object");
     // Older saves had one "eyes" setting for the whole corner; use it for the center too.
@@ -1052,6 +1064,9 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     const text = fmt === "vcard" ? vcard(d) : mecard(d);
     const ecl = $("ecl").value, px = +$("px").value, col = colors();
     const box = $("qrbox");
+    const conv = $("phoneconv").checked;
+    $("phonecc").disabled = !conv;
+    document.querySelector('[data-i18n="phoneccHint"]').textContent = t(conv ? "phoneccHint" : "phoneConvOff");
     $("fg2-wrap").hidden = col.mode === "solid";
     $("eyecolor-wrap").hidden = !col.eye;
     $("logo-size-val").textContent = $("logo-size").value + (lang === "sk" ? " %" : "%");
