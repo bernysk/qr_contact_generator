@@ -63,6 +63,11 @@ legend { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-
 .row.three { grid-template-columns: 2fr 1fr 1.4fr; }
 .row.name4 { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 0.7fr); }
 @media (max-width: 640px) { .row.name4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.row.tri { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 560px) { .row.tri { grid-template-columns: minmax(0, 1fr); } }
+.grad { display: grid; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
+.grad .gcount { grid-auto-flow: column; justify-content: start; align-items: center; gap: 8px; }
+.grad .gcount select { width: auto; }
 @media (max-width: 480px) { .row, .row.three { grid-template-columns: minmax(0, 1fr); } }
 label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; min-width: 0; }
 .label { font-size: 13px; font-weight: 500; }
@@ -281,7 +286,20 @@ input[aria-invalid="true"] { border-color: var(--warn); }
         <div class="colors">
           <label for="fg"><input type="color" id="fg" value="#000000"><span data-i18n="fg">Color</span></label>
           <label for="fg2" id="fg2-wrap" hidden><input type="color" id="fg2" value="#1747c4"><span data-i18n="fg2">Second color</span></label>
+          <label for="fg3" id="fg3-wrap" hidden><input type="color" id="fg3" value="#0b6e4f"><span data-i18n="fg3">Third color</span></label>
+          <label for="fg4" id="fg4-wrap" hidden><input type="color" id="fg4" value="#5a189a"><span data-i18n="fg4">Fourth color</span></label>
           <label for="bg"><input type="color" id="bg" value="#ffffff"><span data-i18n="bg">Background</span></label>
+        </div>
+        <div class="grad" id="grad-wrap" hidden>
+          <label for="gcount" class="gcount"><span data-i18n="gcount">Gradient colors</span>
+            <select id="gcount"><option value="2" selected>2</option><option value="3">3</option><option value="4">4</option></select>
+          </label>
+          <label for="gangle" id="gangle-wrap"><span><span data-i18n="gangle">Direction</span>: <span id="gangle-val">135°</span></span><input type="range" id="gangle" min="0" max="355" step="5" value="135"></label>
+          <div class="row tri" id="radial-wrap">
+            <label for="gcx"><span><span data-i18n="gcx">Center left–right</span>: <span id="gcx-val">50%</span></span><input type="range" id="gcx" min="0" max="100" step="5" value="50"></label>
+            <label for="gcy"><span><span data-i18n="gcy">Center top–bottom</span>: <span id="gcy-val">50%</span></span><input type="range" id="gcy" min="0" max="100" step="5" value="50"></label>
+            <label for="gsize"><span><span data-i18n="gsize">Size</span>: <span id="gsize-val">100%</span></span><input type="range" id="gsize" min="30" max="200" step="5" value="100"></label>
+          </div>
         </div>
         <div class="colors">
           <label class="check" for="eyeown"><input type="checkbox" id="eyeown"><span data-i18n="eyeOwn">Different color for corner squares</span></label>
@@ -421,7 +439,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       imported: "Imported {n} contacts", csvBad: "No known columns found. Start from the CSV template.", csvEmpty: "The file has no contact rows.",
       added: "Added to the list", zipping: "Preparing {n} codes…", zipSkipped: "Too long for one code and left out: {n}.",
       csvCopied: "CSV copied. Paste it into a spreadsheet.", copyFail: "This browser blocked copying.", shapeWarn: "This dot shape may not scan on every phone", eyeWarn: "This corner combination may not scan on every phone",
-      fill: "Dot color", fillSolid: "Solid", fillLinear: "Gradient (diagonal)", fillRadial: "Gradient (from center)",
+      fill: "Dot color", fillSolid: "Solid", fillLinear: "Linear gradient", fillRadial: "Radial gradient",
+      fg3: "Third color", fg4: "Fourth color", gcount: "Gradient colors", gangle: "Direction", gcx: "Center left–right", gcy: "Center top–bottom", gsize: "Size",
       px: "Image size", pxPrint: "2048 px (print)", fg: "Color", fg2: "Second color", bg: "Background",
       eyeOwn: "Different color for corner squares", eyeColor: "Corner color",
       styleHint: "Keep the code dark on a light background. Gradients scan best when both colors are dark.",
@@ -491,7 +510,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       imported: "Importované kontakty: {n}", csvBad: "Nenašli sa známe stĺpce. Začnite zo šablóny CSV.", csvEmpty: "Súbor neobsahuje žiadne kontakty.",
       added: "Pridané do zoznamu", zipping: "Pripravujú sa kódy: {n}…", zipSkipped: "Kontakty príliš dlhé na jeden kód boli vynechané: {n}",
       csvCopied: "CSV skopírované. Vložte ho do tabuľky.", copyFail: "Prehliadač zablokoval kopírovanie.", shapeWarn: "Tento tvar bodiek nemusí načítať každý mobil", eyeWarn: "Túto kombináciu rohov nemusí načítať každý mobil",
-      fill: "Farba bodiek", fillSolid: "Jednofarebná", fillLinear: "Prechod (šikmý)", fillRadial: "Prechod (zo stredu)",
+      fill: "Farba bodiek", fillSolid: "Jednofarebná", fillLinear: "Lineárny prechod", fillRadial: "Kruhový prechod",
+      fg3: "Tretia farba", fg4: "Štvrtá farba", gcount: "Farby prechodu", gangle: "Smer", gcx: "Stred vľavo–vpravo", gcy: "Stred hore–dole", gsize: "Veľkosť",
       px: "Veľkosť obrázka", pxPrint: "2048 px (tlač)", fg: "Farba", fg2: "Druhá farba", bg: "Pozadie",
       eyeOwn: "Iná farba rohových štvorcov", eyeColor: "Farba rohov",
       styleHint: "Kód nechajte tmavý na svetlom pozadí. Prechody sa skenujú najlepšie, keď sú obe farby tmavé.",
@@ -898,23 +918,35 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     return { data, eyes };
   }
 
-  // Colors: solid, diagonal gradient (top-left to bottom-right) or radial (center to edge), plus optional corner color.
+  // Colors: solid, a linear gradient at any angle, or a radial gradient from any point, with 2–4 evenly spaced
+  // colors; plus an optional corner color.
   function colors() {
+    const count = +$("gcount").value;
     return {
       mode: $("fill").value, a: $("fg").value, b: $("fg2").value, bg: $("bg").value,
+      stops: [$("fg").value, $("fg2").value, $("fg3").value, $("fg4").value].slice(0, count),
+      angle: +$("gangle").value, cx: +$("gcx").value, cy: +$("gcy").value, size: +$("gsize").value,
       eye: $("eyeown").checked ? $("eyecolor").value : null,
     };
   }
-  function canvasFill(g, col, q, n) {
+  // Gradient geometry in module units over the code area (q = quiet zone, n = modules). The angle follows CSS:
+  // 0° points up, 90° right, 135° (the default) runs from the top-left corner to the bottom-right one, and the
+  // gradient line is long enough to reach the corners. Radial size 100% reaches just past the corners from the middle.
+  function gradGeom(col, q, n) {
     if (col.mode === "linear") {
-      const gr = g.createLinearGradient(q, q, q + n, q + n);
-      gr.addColorStop(0, col.a); gr.addColorStop(1, col.b); return gr;
+      const rad = (col.angle * Math.PI) / 180, dx = Math.sin(rad), dy = -Math.cos(rad);
+      const half = (n * (Math.abs(dx) + Math.abs(dy))) / 2, c = q + n / 2;
+      return { x1: c - dx * half, y1: c - dy * half, x2: c + dx * half, y2: c + dy * half };
     }
-    if (col.mode === "radial") {
-      const c = q + n / 2, gr = g.createRadialGradient(c, c, 0, c, c, n * 0.72);
-      gr.addColorStop(0, col.a); gr.addColorStop(1, col.b); return gr;
-    }
-    return col.a;
+    return { cx: q + (n * col.cx) / 100, cy: q + (n * col.cy) / 100, r: (n * 0.72 * col.size) / 100 };
+  }
+  const stopAt = (i, len) => i / (len - 1);
+  function canvasFill(g, col, q, n) {
+    if (col.mode === "solid") return col.a;
+    const k = gradGeom(col, q, n);
+    const gr = col.mode === "linear" ? g.createLinearGradient(k.x1, k.y1, k.x2, k.y2) : g.createRadialGradient(k.cx, k.cy, 0, k.cx, k.cy, k.r);
+    col.stops.forEach((c, i) => gr.addColorStop(stopAt(i, col.stops.length), c));
+    return gr;
   }
 
   function renderCanvas(qr, px, col) {
@@ -950,13 +982,13 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     const n = qr.getModuleCount(), q = 4, t = n + q * 2;
     const p = modulePaths(qr, q);
     const crisp = $("dots").value === "square" && $("eyes").value === "square" && $("eyedot").value === "square" ? ' shape-rendering="crispEdges"' : "";
-    const stops = '<stop offset="0" stop-color="' + col.a + '"/><stop offset="1" stop-color="' + col.b + '"/>';
+    const stops = col.stops.map((c, i) => '<stop offset="' + fx(stopAt(i, col.stops.length)) + '" stop-color="' + c + '"/>').join("");
     let defs = "", fill = col.a;
-    if (col.mode === "linear") {
-      defs = '<defs><linearGradient id="qrfill" gradientUnits="userSpaceOnUse" x1="' + q + '" y1="' + q + '" x2="' + (q + n) + '" y2="' + (q + n) + '">' + stops + "</linearGradient></defs>";
-      fill = "url(#qrfill)";
-    } else if (col.mode === "radial") {
-      defs = '<defs><radialGradient id="qrfill" gradientUnits="userSpaceOnUse" cx="' + t / 2 + '" cy="' + t / 2 + '" r="' + fx(n * 0.72) + '">' + stops + "</radialGradient></defs>";
+    if (col.mode !== "solid") {
+      const k = gradGeom(col, q, n);
+      defs = col.mode === "linear"
+        ? '<defs><linearGradient id="qrfill" gradientUnits="userSpaceOnUse" x1="' + fx(k.x1) + '" y1="' + fx(k.y1) + '" x2="' + fx(k.x2) + '" y2="' + fx(k.y2) + '">' + stops + "</linearGradient></defs>"
+        : '<defs><radialGradient id="qrfill" gradientUnits="userSpaceOnUse" cx="' + fx(k.cx) + '" cy="' + fx(k.cy) + '" r="' + fx(k.r) + '">' + stops + "</radialGradient></defs>";
       fill = "url(#qrfill)";
     }
     let mark = "";
@@ -1000,7 +1032,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   // ---- Remember in this browser (localStorage, every access guarded) ----
   const STORE = "contact-qr-maker:v1";
-  const OPTS = ["dots", "eyes", "eyedot", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size", "logo-bg", "zip-what", "phonecc"];
+  const OPTS = ["dots", "eyes", "eyedot", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size", "logo-bg", "zip-what", "phonecc", "gcount", "fg3", "fg4", "gangle", "gcx", "gcy", "gsize"];
   let logoTooBigWarned = false;
   function save() {
     if (!$("remember").checked) return;
@@ -1060,6 +1092,14 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     $("phonecc").disabled = !conv;
     document.querySelector('[data-i18n="phoneccHint"]').textContent = t(conv ? "phoneccHint" : "phoneConvOff");
     $("fg2-wrap").hidden = col.mode === "solid";
+    $("grad-wrap").hidden = col.mode === "solid";
+    $("fg3-wrap").hidden = col.mode === "solid" || col.stops.length < 3;
+    $("fg4-wrap").hidden = col.mode === "solid" || col.stops.length < 4;
+    $("gangle-wrap").hidden = col.mode !== "linear";
+    $("radial-wrap").hidden = col.mode !== "radial";
+    const pct = (v) => v + (lang === "sk" ? " %" : "%");
+    $("gangle-val").textContent = col.angle + "°";
+    $("gcx-val").textContent = pct(col.cx); $("gcy-val").textContent = pct(col.cy); $("gsize-val").textContent = pct(col.size);
     $("eyecolor-wrap").hidden = !col.eye;
     $("logo-size-val").textContent = $("logo-size").value + (lang === "sk" ? " %" : "%");
     $("payload").textContent = text;
@@ -1086,7 +1126,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
     const bytes = new TextEncoder().encode(text).length;
     const n = qr.getModuleCount();
-    const inks = [col.a].concat(col.mode === "solid" ? [] : [col.b], col.eye ? [col.eye] : []);
+    const inks = (col.mode === "solid" ? [col.a] : col.stops).concat(col.eye ? [col.eye] : []);
     const ratio = Math.min(...inks.map((c) => contrast(c, col.bg)));
     const darkOnLight = inks.every((c) => luminance(c) < luminance(col.bg));
     const cm = printWidthCm(n).toLocaleString(lang, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -1243,13 +1283,15 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   function applyPreset(p) {
     $("fill").value = p.fill; $("fg").value = p.a; $("fg2").value = p.b; $("bg").value = p.bg;
     $("eyeown").checked = !!p.eye; if (p.eye) $("eyecolor").value = p.eye;
+    // Presets are two-color gradients in the default position.
+    $("gcount").value = "2"; $("gangle").value = "135"; $("gcx").value = "50"; $("gcy").value = "50"; $("gsize").value = "100";
     update();
   }
   function markPreset() {
     const c = colors();
     document.querySelectorAll(".preset").forEach((b) => {
       const p = PRESETS.find((x) => x.id === b.dataset.preset);
-      const match = p.fill === c.mode && p.a === c.a && p.bg === c.bg && (p.fill === "solid" || p.b === c.b) && (p.eye || null) === (c.eye || null);
+      const match = p.fill === c.mode && p.a === c.a && p.bg === c.bg && (p.fill === "solid" || (p.b === c.b && c.stops.length === 2)) && (p.eye || null) === (c.eye || null);
       b.setAttribute("aria-pressed", String(match));
     });
   }
