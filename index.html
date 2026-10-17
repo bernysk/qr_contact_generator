@@ -178,6 +178,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
           <label for="last"><span data-i18n="last">Last name</span><input type="text" id="last" value="Nováková"></label>
           <label for="tafter"><span data-i18n="tafter">Title after</span><input type="text" id="tafter" value="PhD." placeholder="PhD., MBA"></label>
         </div>
+        <label class="check" for="fntitles"><input type="checkbox" id="fntitles" checked><span data-i18n="fnTitles">Show titles on Android phones</span></label>
+        <p class="hint" data-i18n="fnTitlesHint">Android reads only the display name. With this on it shows “Ing. Jana Nováková, PhD.”, but may file “Ing.” as the first name. With it off the name fields are right but Android shows no titles. iPhone shows titles either way.</p>
         <div class="row">
           <label for="org"><span data-i18n="org">Company</span><input type="text" id="org" value="Example Studio s.r.o."></label>
           <label for="title"><span data-i18n="jobTitle">Job title</span><input type="text" id="title" value="Project Manager"></label>
@@ -431,6 +433,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanFail: "Scan check: does not read", zipScanFail: "Failed the scan check ({n}): {names}. Shorten their details or print them larger.",
       phonecc: "Phone numbers from", phoneccHint: "Numbers without a country code get this one, so they also work when dialled from abroad.",
       phoneConv: "Add the country code to local numbers", phoneConvOff: "Numbers go into the code exactly as typed, without spaces.",
+      fnTitles: "Show titles on Android phones",
+      fnTitlesHint: "Android reads only the display name. With this on it shows “Ing. Jana Nováková, PhD.”, but may file “Ing.” as the first name. With it off the name fields are right but Android shows no titles. iPhone shows titles either way.",
       suggested: "Suggested", fromAddress: "address country", zone1: "1 · North America and Caribbean", zone2: "2 · Africa and Atlantic islands",
       zone34: "3–4 · Europe", zone5: "5 · Central and South America", zone6: "6 · Southeast Asia and Oceania", zone7: "7 · Russia and Kazakhstan",
       zone8: "8 · East Asia", zone9: "9 · Middle East, Central and South Asia",
@@ -504,6 +508,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanFail: "Kontrola: kód sa nenačíta", zipScanFail: "Kontrolou neprešli ({n}): {names}. Skráťte ich údaje alebo ich tlačte väčšie.",
       phonecc: "Telefónne čísla z krajiny", phoneccHint: "Čísla bez predvoľby dostanú túto, aby fungovali aj pri volaní zo zahraničia.",
       phoneConv: "Pridať k miestnym číslam predvoľbu krajiny", phoneConvOff: "Čísla idú do kódu presne tak, ako sú napísané, bez medzier.",
+      fnTitles: "Zobraziť tituly na telefónoch s Androidom",
+      fnTitlesHint: "Android číta iba zobrazované meno. So zapnutou voľbou ukáže „Ing. Jana Nováková, PhD.“, ale „Ing.“ môže uložiť ako krstné meno. S vypnutou sú časti mena správne, no Android tituly neukáže. iPhone ukáže tituly v oboch prípadoch.",
       suggested: "Navrhované", fromAddress: "krajina z adresy", zone1: "1 · Severná Amerika a Karibik", zone2: "2 · Afrika a atlantické ostrovy",
       zone34: "3–4 · Európa", zone5: "5 · Stredná a Južná Amerika", zone6: "6 · Juhovýchodná Ázia a Oceánia", zone7: "7 · Rusko a Kazachstan",
       zone8: "8 · Východná Ázia", zone9: "9 · Blízky východ, Stredná a Južná Ázia",
@@ -754,10 +760,12 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     const titles = (s) => s.split(",").map((x) => plain(x.trim())).filter(Boolean).join(",");
     const name = (s) => plain(s).replace(/,/g, " ");
     L.push("N:" + [name(d.last), name(d.first), "", titles(d.tbefore), titles(d.tafter)].join(";"));
-    // FN is the name without titles. Google ignores N and splits FN on spaces itself, so with titles in FN the Pixel
-    // filed "prof. MUDr. Jana Nováková, PhD., MBA" as first name "MUDr. Jana", surname "PhD". Readers that use N
-    // (iPhone and most others) still show the titles.
-    L.push("FN:" + plain([d.first, d.last].filter(Boolean).join(" ") || d.org || "Contact"));
+    // FN is the only name Google's "Add to contacts" reads; it ignores N and splits FN on spaces itself. With titles
+    // in FN, Android shows them but may file a title as a name part (the Pixel made "prof. MUDr. Jana Nováková, PhD.,
+    // MBA" first name "MUDr. Jana", surname "PhD"); without them the parts are right but no titles show. The person
+    // chooses. Readers that use N (iPhone and most others) show the titles either way.
+    const fnName = $("fntitles").checked ? fullName(d) : [d.first, d.last].filter(Boolean).join(" ");
+    L.push("FN:" + plain(fnName || d.org || "Contact"));
     // ORG is "company;department"; a semicolon typed in the company name keeps that meaning.
     if (d.org) L.push("ORG:" + d.org.split(";").map((x) => plain(x.trim())).filter(Boolean).join(";"));
     if (d.title) L.push("TITLE:" + plain(d.title));
@@ -1071,6 +1079,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       eyeown: $("eyeown").checked,
       zipVcf: $("zip-vcf").checked,
       phoneConv: $("phoneconv").checked,
+      fnTitles: $("fntitles").checked,
       list,
       logo: logo ? logo.src : null,
     };
@@ -1103,6 +1112,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       OPTS.forEach((id) => { if (opts[id] != null) setSaved($(id), opts[id]); });
       $("eyeown").checked = !!data.eyeown;
       if (typeof data.phoneConv === "boolean") $("phoneconv").checked = data.phoneConv;
+      if (typeof data.fnTitles === "boolean") $("fntitles").checked = data.fnTitles;
       if (typeof data.zipVcf === "boolean") $("zip-vcf").checked = data.zipVcf;
       if (Array.isArray(data.list)) list = data.list.filter((c) => c && typeof c === "object").map(clean);
       // Older saves had one "eyes" setting for the whole corner; use it for the center too.
