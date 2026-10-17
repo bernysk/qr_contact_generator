@@ -9,8 +9,9 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 - Styles: square, rounded, soft, classy, vertical or horizontal bars, small squares, dots or diamonds; corner frame
   (square, rounded, circle, leaf) and corner center (square, rounded, circle, leaf, diamond) set separately.
   Shapes and corner combinations that failed decode tests show a warning
-- Colors: 12 tested color presets, or your own solid, diagonal or radial gradient, with an optional separate
-  color for the corner squares
+- Colors: 19 tested color presets (7 from the brand palette), or your own solid, diagonal or radial gradient,
+  with an optional separate color for the corner squares. Warns when red ink could vanish under the red light
+  of handheld scanners
 - Several contacts: download a CSV template, fill it in Excel or Google Sheets, import it, edit contacts in a list,
   export the list as CSV, and download every code at once as a ZIP (PNG and/or SVG, plus .vcf files)
 - Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H.

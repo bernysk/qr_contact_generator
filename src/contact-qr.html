@@ -82,6 +82,8 @@ input[type=checkbox] { accent-color: var(--accent); width: 17px; height: 17px; m
 .presets { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
 .preset { display: grid; justify-items: center; gap: 4px; padding: 8px 4px 6px; font-size: 11.5px; line-height: 1.25; text-align: center; color: var(--muted); background: var(--field); }
 .preset[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.preset-group { grid-column: 1 / -1; font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+.preset-group:first-child { margin-top: 0; }
 .sw { width: 38px; height: 38px; border-radius: 8px; position: relative; border: 1px solid var(--line); }
 .sw i { position: absolute; inset: 9px 6px 6px 9px; border-radius: 3px; }
 .sw b { position: absolute; left: 4px; top: 4px; width: 13px; height: 13px; border-radius: 3px; border: 3.5px solid; }
@@ -375,6 +377,9 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       presets: "Color presets", presetsHint: "Every combination is dark enough on its background to scan reliably.",
       pClassic: "Classic", pInk: "Ink & blue", pNavyCoral: "Navy & coral", pForest: "Forest", pOcean: "Ocean", pPlum: "Plum",
       pSunset: "Sunset", pRedCharcoal: "Red & charcoal", pTealBrick: "Teal & brick", pMidnightGold: "Midnight & gold", pBerry: "Berry", pSlate: "Slate & blue",
+      pAubergine: "Aubergine", pAubTeal: "Aubergine & teal", pTealAub: "Teal & aubergine", pSlateTeal: "Slate & teal",
+      pAubToTeal: "Aubergine to teal", pAubMist: "Aubergine on mist", pAubRed: "Aubergine & red",
+      groupPalette: "Your palette", groupMore: "More combinations", redWarn: "Red ink may not scan with handheld scanners",
       lgBatch: "Several contacts",
       batchHint: "Make codes for a whole team: fill in the CSV template in Excel or Google Sheets, import it, and download every code at once in the current style.",
       csvTemplate: "Download CSV template", csvTemplateCopy: "Copy CSV template", csvImport: "Import CSV", listAdd: "Add form to list",
@@ -432,6 +437,9 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       presets: "Farebné kombinácie", presetsHint: "Každá kombinácia je na svojom pozadí dosť tmavá, aby sa spoľahlivo naskenovala.",
       pClassic: "Klasika", pInk: "Atrament a modrá", pNavyCoral: "Námornícka a koralová", pForest: "Les", pOcean: "Oceán", pPlum: "Slivka",
       pSunset: "Západ slnka", pRedCharcoal: "Červená a grafit", pTealBrick: "Petrolej a tehla", pMidnightGold: "Polnoc a zlato", pBerry: "Lesné plody", pSlate: "Bridlica a modrá",
+      pAubergine: "Baklažán", pAubTeal: "Baklažán a petrolej", pTealAub: "Petrolej a baklažán", pSlateTeal: "Bridlica a petrolej",
+      pAubToTeal: "Baklažán do petroleja", pAubMist: "Baklažán na hmle", pAubRed: "Baklažán a červená",
+      groupPalette: "Vaša paleta", groupMore: "Ďalšie kombinácie", redWarn: "Červenú farbu nemusia načítať ručné skenery",
       lgBatch: "Viac kontaktov",
       batchHint: "Kódy pre celý tím: vyplňte šablónu CSV v Exceli alebo Google Sheets, importujte ju a stiahnite všetky kódy naraz v aktuálnom štýle.",
       csvTemplate: "Stiahnuť šablónu CSV", csvTemplateCopy: "Kopírovať šablónu CSV", csvImport: "Importovať CSV", listAdd: "Pridať formulár do zoznamu",
@@ -784,6 +792,12 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((x) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); });
     return 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
   }
+  // Handheld laser and LED scanners light the code with red, so they only see the red channel. An ink is "red"
+  // to them when it reflects more than a third as much red light as the background (red, magenta, orange).
+  function redInk(ink, bg) {
+    const lin = (hex) => { const x = parseInt(hex.slice(1, 3), 16) / 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4); };
+    return lin(ink) > lin(bg) / 3;
+  }
   function contrast(a, b) {
     const la = luminance(a), lb = luminance(b);
     return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
@@ -891,6 +905,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     ];
     if (RISKY_DOTS.includes($("dots").value)) chips.push([t("shapeWarn"), "warn"]);
     if (!SAFE_EYES.includes($("eyes").value + "/" + $("eyedot").value)) chips.push([t("eyeWarn"), "warn"]);
+    if (inks.some((c) => redInk(c, col.bg))) chips.push([t("redWarn"), "warn"]);
     if (logo) {
       const area = Math.round(logoCells(n).size / (n * n) * 100);
       const safe = { L: 3, M: 7, Q: 12, H: 18 }[ecl];
@@ -959,25 +974,44 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     { id: "pPlum", fill: "radial", a: "#7b2cbf", b: "#240046", eye: "#240046", bg: "#ffffff" },
     { id: "pSlate", fill: "radial", a: "#4a5568", b: "#1a202c", eye: "#1e4e8c", bg: "#ffffff" },
   ];
+  // Brand palette: aubergine #31171f, red #ea0029, teal #2f7c85, slate #505f6e, light teal #64aab2.
+  // Light teal is too pale for ink (2.6:1 on white), so it only appears as a background tint. Red corners
+  // trigger the red-ink warning; the preset is kept because red is the palette's signature color. Teal and slate
+  // corners use a slightly darker shade (#24646b, #46535f): the exact palette tones missed one decode size.
+  PRESETS.unshift(
+    { id: "pAubergine", group: "palette", fill: "solid", a: "#31171f", b: "#31171f", eye: null, bg: "#ffffff" },
+    { id: "pAubTeal", group: "palette", fill: "solid", a: "#31171f", b: "#31171f", eye: "#24646b", bg: "#ffffff" },
+    { id: "pTealAub", group: "palette", fill: "solid", a: "#2f7c85", b: "#2f7c85", eye: "#31171f", bg: "#ffffff" },
+    { id: "pSlateTeal", group: "palette", fill: "solid", a: "#505f6e", b: "#505f6e", eye: "#24646b", bg: "#ffffff" },
+    { id: "pAubToTeal", group: "palette", fill: "linear", a: "#31171f", b: "#2f7c85", eye: "#31171f", bg: "#ffffff" },
+    { id: "pAubMist", group: "palette", fill: "solid", a: "#31171f", b: "#31171f", eye: "#46535f", bg: "#eef6f7" },
+    { id: "pAubRed", group: "palette", fill: "solid", a: "#31171f", b: "#31171f", eye: "#ea0029", bg: "#ffffff" },
+  );
   function swatchCss(p) {
     if (p.fill === "linear") return "linear-gradient(135deg," + p.a + "," + p.b + ")";
     if (p.fill === "radial") return "radial-gradient(circle," + p.a + "," + p.b + ")";
     return p.a;
   }
   function renderPresets() {
-    $("presets").replaceChildren(...PRESETS.map((p) => {
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "preset"; b.dataset.preset = p.id;
-      const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = p.bg;
-      const dots = document.createElement("i"); dots.style.background = swatchCss(p);
-      const eye = document.createElement("b"); eye.style.borderColor = p.eye || p.a; eye.style.background = p.bg;
-      sw.append(dots, eye);
-      const name = document.createElement("span"); name.textContent = t(p.id);
-      b.append(sw, name);
-      b.addEventListener("click", () => applyPreset(p));
-      return b;
+    const groupHead = (key) => { const h = document.createElement("span"); h.className = "preset-group"; h.textContent = t(key); return h; };
+    $("presets").replaceChildren(...PRESETS.flatMap((p, i) => {
+      const prev = PRESETS[i - 1];
+      const heads = !prev ? [groupHead(p.group ? "groupPalette" : "groupMore")] : prev.group && !p.group ? [groupHead("groupMore")] : [];
+      return heads.concat(presetButton(p));
     }));
     markPreset();
+  }
+  function presetButton(p) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "preset"; b.dataset.preset = p.id;
+    const sw = document.createElement("span"); sw.className = "sw"; sw.style.background = p.bg;
+    const dots = document.createElement("i"); dots.style.background = swatchCss(p);
+    const eye = document.createElement("b"); eye.style.borderColor = p.eye || p.a; eye.style.background = p.bg;
+    sw.append(dots, eye);
+    const name = document.createElement("span"); name.textContent = t(p.id);
+    b.append(sw, name);
+    b.addEventListener("click", () => applyPreset(p));
+    return b;
   }
   function applyPreset(p) {
     $("fill").value = p.fill; $("fg").value = p.a; $("fg2").value = p.b; $("bg").value = p.bg;
