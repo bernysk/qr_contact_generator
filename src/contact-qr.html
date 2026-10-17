@@ -585,6 +585,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   // ---- Contact text ----
   const v = () => Object.fromEntries(fields.map((f) => [f, $(f).value.trim()]));
   const escV = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+  // For single-value fields: same as escV but keeps commas plain (see FN in vcard()).
+  const escT = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/;/g, "\\;");
   const escM = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\n/g, " ");
   const tel = (s) => phone(s).e164 || s.replace(/[^\d+]/g, "");
 
@@ -729,18 +731,22 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   function vcard(d) {
     const L = ["BEGIN:VCARD", "VERSION:3.0"];
-    // N is family;given;additional;honorific prefix;honorific suffix, so titles get their own slots.
-    L.push("N:" + [escV(d.last), escV(d.first), "", escV(d.tbefore), escV(d.tafter)].join(";"));
-    L.push("FN:" + escV(fullName(d) || d.org || "Contact"));
-    if (d.org) L.push("ORG:" + escV(d.org));
-    if (d.title) L.push("TITLE:" + escV(d.title));
+    // N is family;given;additional;honorific prefix;honorific suffix, so titles get their own slots. Several titles
+    // ("PhD., MBA") become a comma-separated list, which is how N holds more than one value.
+    const titles = (s) => s.split(",").map((x) => escV(x.trim())).filter(Boolean).join(",");
+    L.push("N:" + [escV(d.last), escV(d.first), "", titles(d.tbefore), titles(d.tafter)].join(";"));
+    // FN, ORG, TITLE and NOTE hold one value each, so a comma in them can't be mistaken for a separator. vCard 3.0
+    // still asks for "\,", but the Pixel camera shows that backslash ("Nováková\, PhD."), so these keep plain commas.
+    L.push("FN:" + escT(fullName(d) || d.org || "Contact"));
+    if (d.org) L.push("ORG:" + escT(d.org));
+    if (d.title) L.push("TITLE:" + escT(d.title));
     if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
     if (d.work) L.push("TEL;TYPE=WORK,VOICE:" + tel(d.work));
     if (d.email) L.push("EMAIL;TYPE=INTERNET:" + d.email);
     if (d.url) L.push("URL:" + fullUrl(d.url));
     if (d.street || d.city || d.zip || d.country)
       L.push("ADR;TYPE=WORK:" + ["", "", escV(d.street), escV(d.city), "", escV(d.zip), escV(d.country)].join(";"));
-    if (d.note) L.push("NOTE:" + escV(d.note));
+    if (d.note) L.push("NOTE:" + escT(d.note));
     L.push("END:VCARD");
     return L.join("\r\n");
   }
