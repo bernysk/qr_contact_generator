@@ -20,7 +20,9 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
   Empty margins in the logo file are trimmed automatically, and wide or tall logos get a matching box
 - Scan check: every code is decoded in the page at five sizes, the way a phone camera sees it, and the result is
   shown next to the code; the ZIP export lists any codes that fail
-- Field checks: phone numbers get the chosen country's code (e.g. `0905 333 444` becomes `+421 905 333 444`),
+- Field checks: phone numbers get the chosen country's code (e.g. `0905 333 444` becomes `+421 905 333 444`).
+  All 245 calling codes from Wikipedia's list, grouped by ITU zone, with flags; the address country is
+  suggested at the top of the list but never changes the choice by itself,
   and emails, websites and numbers that look wrong are highlighted
 - Print-size hint: shows the smallest width the code can be printed at, and warns when it is too dense for a business card
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text
@@ -59,3 +61,6 @@ HTML skeleton, uses the bundled libraries, drops the web font, and switches down
 
 QR encoding by [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)
 by Kazuhiko Arase, MIT license. QR reading for the scan check by [jsQR](https://github.com/cozmo/jsQR), Apache-2.0 license.
+Flag emoji on Windows by [Twemoji Country Flags](https://github.com/talkjs/country-flag-emoji-polyfill) (MIT),
+with flag art from [Twemoji](https://github.com/twitter/twemoji), [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/),
+embedded unchanged in the page.
