@@ -592,9 +592,10 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   // ---- Contact text ----
   const v = () => Object.fromEntries(fields.map((f) => [f, $(f).value.trim()]));
-  const escV = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
-  // For single-value fields: same as escV but keeps commas plain (see FN in vcard()).
-  const escT = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/;/g, "\\;");
+  // vCard text without escapes. Google's "Add to contacts" (Pixel camera) doesn't decode vCard escapes and shows
+  // "\," "\;" "\n" literally, so instead of escaping, the characters that would need it are replaced: a backslash
+  // becomes "/", a line break ", " and a semicolon ","; commas stay plain. iPhone and other readers accept this too.
+  const plain = (s) => s.replace(/\\/g, "/").replace(/\s*\n\s*/g, ", ").replace(/;/g, ",");
   const escM = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\n/g, " ");
   const tel = (s) => phone(s).e164 || s.replace(/[^\d+]/g, "");
 
@@ -741,20 +742,23 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     const L = ["BEGIN:VCARD", "VERSION:3.0"];
     // N is family;given;additional;honorific prefix;honorific suffix, so titles get their own slots. Several titles
     // ("PhD., MBA") become a comma-separated list, which is how N holds more than one value.
-    const titles = (s) => s.split(",").map((x) => escV(x.trim())).filter(Boolean).join(",");
-    L.push("N:" + [escV(d.last), escV(d.first), "", titles(d.tbefore), titles(d.tafter)].join(";"));
-    // FN, ORG, TITLE and NOTE hold one value each, so a comma in them can't be mistaken for a separator. vCard 3.0
-    // still asks for "\,", but the Pixel camera shows that backslash ("Nováková\, PhD."), so these keep plain commas.
-    L.push("FN:" + escT(fullName(d) || d.org || "Contact"));
-    if (d.org) L.push("ORG:" + escT(d.org));
-    if (d.title) L.push("TITLE:" + escT(d.title));
+    const titles = (s) => s.split(",").map((x) => plain(x.trim())).filter(Boolean).join(",");
+    const name = (s) => plain(s).replace(/,/g, " ");
+    L.push("N:" + [name(d.last), name(d.first), "", titles(d.tbefore), titles(d.tafter)].join(";"));
+    // FN is the name without titles. Google ignores N and splits FN on spaces itself, so with titles in FN the Pixel
+    // filed "prof. MUDr. Jana Nováková, PhD., MBA" as first name "MUDr. Jana", surname "PhD". Readers that use N
+    // (iPhone and most others) still show the titles.
+    L.push("FN:" + plain([d.first, d.last].filter(Boolean).join(" ") || d.org || "Contact"));
+    // ORG is "company;department"; a semicolon typed in the company name keeps that meaning.
+    if (d.org) L.push("ORG:" + d.org.split(";").map((x) => plain(x.trim())).filter(Boolean).join(";"));
+    if (d.title) L.push("TITLE:" + plain(d.title));
     if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
     if (d.work) L.push("TEL;TYPE=WORK,VOICE:" + tel(d.work));
     if (d.email) L.push("EMAIL;TYPE=INTERNET:" + d.email);
     if (d.url) L.push("URL:" + fullUrl(d.url));
     if (d.street || d.city || d.zip || d.country)
-      L.push("ADR;TYPE=WORK:" + ["", "", escV(d.street), escV(d.city), "", escV(d.zip), escV(d.country)].join(";"));
-    if (d.note) L.push("NOTE:" + escT(d.note));
+      L.push("ADR;TYPE=WORK:" + ["", "", plain(d.street), plain(d.city), "", plain(d.zip), plain(d.country)].join(";"));
+    if (d.note) L.push("NOTE:" + plain(d.note));
     L.push("END:VCARD");
     return L.join("\r\n");
   }
