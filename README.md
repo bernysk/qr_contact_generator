@@ -38,6 +38,18 @@ and it works offline.
 git clone https://github.com/bernysk/qr_contact_generator.git
 ```
 
+## Development
+
+`index.html` is generated, so don't edit it directly. The source is `src/contact-qr.html`:
+
+1. Edit `src/contact-qr.html`.
+2. Run `python build.py` to regenerate `index.html` (Python 3, no packages needed).
+3. Commit both files. A GitHub Action runs `python build.py --check` and fails if they don't match.
+
+The source is written for the claude.ai artifact viewer: it loads the QR libraries from a CDN and has downloads
+switched off, because the viewer blocks them. `build.py` turns it into the standalone, offline page: it adds the
+HTML skeleton, uses the bundled libraries, drops the web font, and switches downloads on.
+
 ## Credits
 
 QR encoding by [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)

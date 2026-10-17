@@ -1,0 +1,16 @@
+name: Check build
+
+# index.html is generated from src/contact-qr.html by build.py. This fails if someone edits one without the other.
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python build.py --check
