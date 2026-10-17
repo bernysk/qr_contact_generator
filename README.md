@@ -17,6 +17,10 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 - Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H.
   With a transparent PNG or SVG the code wraps around the logo's shape, or pick a square background.
   Empty margins in the logo file are trimmed automatically, and wide or tall logos get a matching box
+- Scan check: every code is decoded in the page at five sizes, the way a phone camera sees it, and the result is
+  shown next to the code; the ZIP export lists any codes that fail
+- Field checks: phone numbers get the chosen country's code (e.g. `0905 333 444` becomes `+421 905 333 444`),
+  and emails, websites and numbers that look wrong are highlighted
 - Print-size hint: shows the smallest width the code can be printed at, and warns when it is too dense for a business card
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text
 - English and Slovak interface (follows your browser language, switch in the top corner)
@@ -24,7 +28,7 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 ## Privacy
 
 Everything runs in your browser. There is no server, no tracking and no external requests:
-the QR library is bundled in this repo (`qrcode.min.js`). Nothing you type is sent anywhere.
+the QR libraries are bundled in this repo (`qrcode.min.js`, `jsQR.js`). Nothing you type is sent anywhere.
 
 If you tick **Remember my details in this browser**, your fields, style choices and logo are saved in
 your browser's local storage on that device only, and filled in next time. Untick it to delete them.
@@ -53,4 +57,4 @@ HTML skeleton, uses the bundled libraries, drops the web font, and switches down
 ## Credits
 
 QR encoding by [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator)
-by Kazuhiko Arase, MIT license.
+by Kazuhiko Arase, MIT license. QR reading for the scan check by [jsQR](https://github.com/cozmo/jsQR), Apache-2.0 license.

@@ -3,6 +3,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <style>
 /* Layout: form on the left, a sticky "business card" preview with the live code on the right; stacks on phones. */
 :root {
@@ -128,6 +129,9 @@ details { background: var(--surface); border: 1px solid var(--line); border-radi
 summary { cursor: pointer; font-size: 13px; font-weight: 600; color: var(--muted); }
 pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin: 10px 0 0; overflow-x: auto; white-space: pre; }
 .err { color: var(--warn); font-size: 13.5px; text-align: center; padding: 16px; }
+.field-msg { font-size: 12px; font-weight: 400; color: var(--muted); }
+.field-msg.bad { color: var(--warn); }
+input[aria-invalid="true"] { border-color: var(--warn); }
 @media (prefers-reduced-motion: no-preference) { button { transition: filter .15s; } }
 </style>
 
@@ -160,12 +164,16 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       <fieldset>
         <legend data-i18n="lgReach">Reach</legend>
         <div class="row">
-          <label for="cell"><span data-i18n="cell">Mobile</span><input type="tel" id="cell" value="+421 900 123 456"></label>
-          <label for="work"><span data-i18n="work">Work phone</span><input type="tel" id="work" value=""></label>
+          <label for="cell"><span data-i18n="cell">Mobile</span><input type="tel" id="cell" value="+421 900 123 456" aria-describedby="cell-msg"><small class="field-msg" id="cell-msg" hidden></small></label>
+          <label for="work"><span data-i18n="work">Work phone</span><input type="tel" id="work" value="" aria-describedby="work-msg"><small class="field-msg" id="work-msg" hidden></small></label>
         </div>
         <div class="row">
-          <label for="email"><span data-i18n="email">Email</span><input type="email" id="email" value="jana@example.com"></label>
-          <label for="url"><span data-i18n="url">Website</span><input type="url" id="url" value="https://example.com"></label>
+          <label for="phonecc"><span data-i18n="phonecc">Phone numbers from</span><select id="phonecc"></select></label>
+          <p class="hint" style="align-self:end" data-i18n="phoneccHint">Numbers without a country code get this one, so they also work when dialled from abroad.</p>
+        </div>
+        <div class="row">
+          <label for="email"><span data-i18n="email">Email</span><input type="email" id="email" value="jana@example.com" aria-describedby="email-msg"><small class="field-msg" id="email-msg" hidden></small></label>
+          <label for="url"><span data-i18n="url">Website</span><input type="url" id="url" value="https://example.com" aria-describedby="url-msg"><small class="field-msg" id="url-msg" hidden></small></label>
         </div>
       </fieldset>
 
@@ -380,6 +388,12 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       pAubergine: "Aubergine", pAubTeal: "Aubergine & teal", pTealAub: "Teal & aubergine", pSlateTeal: "Slate & teal",
       pAubToTeal: "Aubergine to teal", pAubMist: "Aubergine on mist", pAubRed: "Aubergine & red",
       groupPalette: "Your palette", groupMore: "More combinations", redWarn: "Red ink may not scan with handheld scanners",
+      scanPending: "Checking that it scans…", scanOk: "Scan check: reads at all {m} test sizes", scanSome: "Scan check: fails at some sizes ({n} of {m} read)",
+      scanFail: "Scan check: does not read", zipScanFail: "Failed the scan check ({n}): {names}. Shorten their details or print them larger.",
+      phonecc: "Phone numbers from", phoneccHint: "Numbers without a country code get this one, so they also work when dialled from abroad.",
+      phoneAs: "In the code as {num}", phoneBad: "Check this number: it looks too short or too long for a phone number.",
+      emailBad: "Check the email: it needs an @ and a domain, like name@example.com.", urlBad: "Check the website: it needs a domain, like example.com.",
+      fieldsWarn: "Check the highlighted fields",
       lgBatch: "Several contacts",
       batchHint: "Make codes for a whole team: fill in the CSV template in Excel or Google Sheets, import it, and download every code at once in the current style.",
       csvTemplate: "Download CSV template", csvTemplateCopy: "Copy CSV template", csvImport: "Import CSV", listAdd: "Add form to list",
@@ -388,7 +402,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       csvExport: "Export list as CSV", csvExportCopy: "Copy list as CSV",
       batchNoDl: "Downloading every code as a ZIP works on the GitHub version of this page.",
       imported: "Imported {n} contacts", csvBad: "No known columns found. Start from the CSV template.", csvEmpty: "The file has no contact rows.",
-      added: "Added to the list", zipping: "Preparing {n} codes…", zipSkipped: "{n} contacts were too long for one code and were left out.",
+      added: "Added to the list", zipping: "Preparing {n} codes…", zipSkipped: "Too long for one code and left out: {n}.",
       csvCopied: "CSV copied. Paste it into a spreadsheet.", copyFail: "This browser blocked copying.", shapeWarn: "This dot shape may not scan on every phone", eyeWarn: "This corner combination may not scan on every phone",
       fill: "Dot color", fillSolid: "Solid", fillLinear: "Gradient (diagonal)", fillRadial: "Gradient (from center)",
       px: "Image size", pxPrint: "2048 px (print)", fg: "Color", fg2: "Second color", bg: "Background",
@@ -440,6 +454,12 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       pAubergine: "Baklažán", pAubTeal: "Baklažán a petrolej", pTealAub: "Petrolej a baklažán", pSlateTeal: "Bridlica a petrolej",
       pAubToTeal: "Baklažán do petroleja", pAubMist: "Baklažán na hmle", pAubRed: "Baklažán a červená",
       groupPalette: "Vaša paleta", groupMore: "Ďalšie kombinácie", redWarn: "Červenú farbu nemusia načítať ručné skenery",
+      scanPending: "Kontroluje sa načítanie…", scanOk: "Kontrola: načíta sa vo všetkých {m} veľkostiach", scanSome: "Kontrola: niektoré veľkosti zlyhali ({n} z {m} sa načítalo)",
+      scanFail: "Kontrola: kód sa nenačíta", zipScanFail: "Kontrolou neprešli ({n}): {names}. Skráťte ich údaje alebo ich tlačte väčšie.",
+      phonecc: "Telefónne čísla z krajiny", phoneccHint: "Čísla bez predvoľby dostanú túto, aby fungovali aj pri volaní zo zahraničia.",
+      phoneAs: "V kóde ako {num}", phoneBad: "Skontrolujte číslo: na telefónne číslo je príliš krátke alebo príliš dlhé.",
+      emailBad: "Skontrolujte e-mail: potrebuje @ a doménu, napr. meno@example.com.", urlBad: "Skontrolujte web: potrebuje doménu, napr. example.com.",
+      fieldsWarn: "Skontrolujte zvýraznené polia",
       lgBatch: "Viac kontaktov",
       batchHint: "Kódy pre celý tím: vyplňte šablónu CSV v Exceli alebo Google Sheets, importujte ju a stiahnite všetky kódy naraz v aktuálnom štýle.",
       csvTemplate: "Stiahnuť šablónu CSV", csvTemplateCopy: "Kopírovať šablónu CSV", csvImport: "Importovať CSV", listAdd: "Pridať formulár do zoznamu",
@@ -510,7 +530,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   function setLang(l) {
     lang = l;
     try { localStorage.setItem(LANG_KEY, l); } catch {}
-    applyLang(); renderPresets(); update();
+    applyLang(); renderPresets(); fillCountries(); update();
   }
   $("lang-en").addEventListener("click", () => setLang("en"));
   $("lang-sk").addEventListener("click", () => setLang("sk"));
@@ -519,7 +539,85 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   const v = () => Object.fromEntries(fields.map((f) => [f, $(f).value.trim()]));
   const escV = (s) => s.replace(/\\/g, "\\\\").replace(/\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
   const escM = (s) => s.replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/:/g, "\\:").replace(/,/g, "\\,").replace(/\n/g, " ");
-  const tel = (s) => s.replace(/[^\d+]/g, "");
+  const tel = (s) => phone(s).e164 || s.replace(/[^\d+]/g, "");
+
+  // ---- Phone numbers: local numbers get the chosen country's code, so they work when dialled from abroad ----
+  // trunk: the national prefix dropped in international format (0 in most of Europe, 06 in Hungary, 1 in the US).
+  const COUNTRIES = [
+    ["SK", "421", "0", "Slovakia", "Slovensko"], ["CZ", "420", "", "Czechia", "Česko"], ["AT", "43", "0", "Austria", "Rakúsko"],
+    ["HU", "36", "06", "Hungary", "Maďarsko"], ["PL", "48", "", "Poland", "Poľsko"], ["UA", "380", "0", "Ukraine", "Ukrajina"],
+    ["DE", "49", "0", "Germany", "Nemecko"], ["CH", "41", "0", "Switzerland", "Švajčiarsko"], ["GB", "44", "0", "United Kingdom", "Spojené kráľovstvo"],
+    ["IE", "353", "0", "Ireland", "Írsko"], ["FR", "33", "0", "France", "Francúzsko"], ["IT", "39", "", "Italy", "Taliansko"],
+    ["ES", "34", "", "Spain", "Španielsko"], ["NL", "31", "0", "Netherlands", "Holandsko"], ["BE", "32", "0", "Belgium", "Belgicko"],
+    ["US", "1", "1", "United States", "Spojené štáty"],
+  ].map(([code, dial, trunk, en, sk]) => ({ code, dial, trunk, en, sk }));
+  // Regional-indicator flag; Windows shows the two letters instead of a flag picture.
+  const flag = (code) => String.fromCodePoint(...[...code].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65));
+  // Default from the browser language. English (en-US, en-GB) is the default for many people outside those
+  // countries, so it doesn't count; everything else falls back to Slovakia.
+  function guessCountry() {
+    const [base, region = ""] = (navigator.language || "").split("-");
+    const byLang = { sk: "SK", cs: "CZ", hu: "HU", pl: "PL", uk: "UA", de: region.toUpperCase() || "DE" }[base];
+    return [byLang].find((c) => COUNTRIES.some((x) => x.code === c)) || "SK";
+  }
+  function fillCountries() {
+    const sel = $("phonecc"), keep = sel.value || guessCountry();
+    sel.replaceChildren(...COUNTRIES.map((c) => new Option(flag(c.code) + " " + c[lang === "sk" ? "sk" : "en"] + " (+" + c.dial + ")", c.code)));
+    sel.value = keep;
+  }
+  // Returns { e164: "+421905333444", pretty: "+421 905 333 444", ok } or {} for an empty field.
+  function phone(raw) {
+    const input = String(raw || "").trim();
+    let s = input.replace(/[^\d+]/g, "");
+    if (!s) return {};
+    let cc, skip; // skip = digits of the typed prefix (00, country code or trunk) before the national number
+    if (s.startsWith("+") || s.startsWith("00")) {
+      const intl = s.replace(/^\+|^00/, "").replace(/\+/g, "");
+      cc = COUNTRIES.map((x) => x.dial).filter((d) => intl.startsWith(d)).sort((a, b) => b.length - a.length)[0] || "";
+      skip = (s.startsWith("00") ? 2 : 0) + cc.length;
+      s = "+" + intl;
+    } else {
+      const c = COUNTRIES.find((x) => x.code === $("phonecc").value) || COUNTRIES[0];
+      cc = c.dial;
+      skip = c.trunk && s.startsWith(c.trunk) ? c.trunk.length : 0;
+      s = "+" + cc + s.slice(skip);
+    }
+    const national = s.slice(1 + cc.length);
+    // Keep the spacing the person typed for the national part (area codes differ by country);
+    // only when they typed none, group it in threes without leaving a single digit at the end.
+    let rest = input.replace(/^\s*\+/, ""), n = skip;
+    while (n > 0 && rest) { if (/\d/.test(rest[0])) n--; rest = rest.slice(1); }
+    const spaced = rest.replace(/\D+/g, " ").trim();
+    let groups = spaced.includes(" ") ? spaced.split(" ") : national.match(/.{1,3}/g) || [];
+    if (!spaced.includes(" ") && groups.length > 1 && groups[groups.length - 1].length === 1)
+      groups.splice(-2, 2, groups[groups.length - 2] + groups[groups.length - 1]);
+    const digits = s.length - 1;
+    const ok = digits >= 8 && digits <= 15 && national.length >= 6 && /^\+[1-9]/.test(s);
+    return { e164: s, pretty: "+" + (cc ? cc + " " : "") + groups.join(" "), ok };
+  }
+  const emailOk = (s) => /^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/.test(s);
+  const urlOk = (s) => /^(https?:\/\/)?[^\s\/.]+(\.[^\s\/.]+)*\.[a-z]{2,}(:\d+)?(\/\S*)?$/i.test(s);
+  const fullUrl = (s) => (/^[a-z][a-z0-9+.-]*:/i.test(s) ? s : "https://" + s);
+  // Shows a message under each checked field and returns true when every filled field looks right.
+  function checkFields() {
+    let allOk = true;
+    const show = (id, msg, bad) => {
+      const el = $(id + "-msg");
+      el.hidden = !msg; el.textContent = msg || ""; el.classList.toggle("bad", !!bad);
+      $(id).setAttribute("aria-invalid", String(!!bad));
+      if (bad) allOk = false;
+    };
+    for (const id of ["cell", "work"]) {
+      const raw = $(id).value.trim(), p = phone(raw);
+      if (!raw) show(id, "");
+      else if (!p.ok) show(id, t("phoneBad"), true);
+      else show(id, raw === p.pretty ? "" : t("phoneAs", { num: p.pretty }));
+    }
+    const email = $("email").value.trim(), url = $("url").value.trim();
+    show("email", email && !emailOk(email) ? t("emailBad") : "", email && !emailOk(email));
+    show("url", url && !urlOk(url) ? t("urlBad") : "", url && !urlOk(url));
+    return allOk;
+  }
 
   function vcard(d) {
     const L = ["BEGIN:VCARD", "VERSION:3.0"];
@@ -530,7 +628,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
     if (d.work) L.push("TEL;TYPE=WORK,VOICE:" + tel(d.work));
     if (d.email) L.push("EMAIL;TYPE=INTERNET:" + d.email);
-    if (d.url) L.push("URL:" + d.url);
+    if (d.url) L.push("URL:" + fullUrl(d.url));
     if (d.street || d.city || d.zip || d.country)
       L.push("ADR;TYPE=WORK:" + ["", "", escV(d.street), escV(d.city), "", escV(d.zip), escV(d.country)].join(";"));
     if (d.note) L.push("NOTE:" + escV(d.note));
@@ -546,7 +644,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     if (d.cell) p.push("TEL:" + tel(d.cell));
     if (d.work) p.push("TEL:" + tel(d.work));
     if (d.email) p.push("EMAIL:" + escM(d.email));
-    if (d.url) p.push("URL:" + escM(d.url));
+    if (d.url) p.push("URL:" + escM(fullUrl(d.url)));
     const adr = [d.street, [d.zip, d.city].filter(Boolean).join(" "), d.country].filter(Boolean).join(", ");
     if (adr) p.push("ADR:" + escM(adr));
     if (d.note) p.push("NOTE:" + escM(d.note));
@@ -813,7 +911,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
 
   // ---- Remember in this browser (localStorage, every access guarded) ----
   const STORE = "contact-qr-maker:v1";
-  const OPTS = ["dots", "eyes", "eyedot", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size", "logo-bg", "zip-what"];
+  const OPTS = ["dots", "eyes", "eyedot", "ecl", "fg", "fg2", "bg", "fill", "eyecolor", "px", "logo-size", "logo-bg", "zip-what", "phonecc"];
   let logoTooBigWarned = false;
   function save() {
     if (!$("remember").checked) return;
@@ -859,6 +957,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
     save();
     renderList();
     markPreset();
+    const fieldsOk = checkFields();
     const d = v();
     const fmt = document.querySelector('input[name="fmt"]:checked').value;
     const text = fmt === "vcard" ? vcard(d) : mecard(d);
@@ -911,14 +1010,46 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       const safe = { L: 3, M: 7, Q: 12, H: 18 }[ecl];
       chips.push(area <= safe ? [t("logoCover", { n: area }), "ok"] : [t("logoCoverWarn", { n: area }), "warn"]);
     }
-    $("meta").replaceChildren(...chips.map(([s, cls]) => { const el = document.createElement("span"); el.className = "chip " + cls; el.textContent = s; return el; }));
+    if (!fieldsOk) chips.push([t("fieldsWarn"), "warn"]);
+    const chipEls = chips.map(([s, cls]) => { const el = document.createElement("span"); el.className = "chip " + cls; el.textContent = s; return el; });
+    // The scan check goes first: it is the one result that sums up all the others.
+    if (window.jsQR) {
+      const scanChip = document.createElement("span");
+      scanChip.className = "chip"; scanChip.textContent = t("scanPending");
+      chipEls.unshift(scanChip);
+      clearTimeout(scanTimer);
+      scanTimer = setTimeout(() => {
+        if (current.canvas !== canvas) return;
+        const r = scanCheck(canvas, text);
+        scanChip.className = "chip " + (r.ok === r.total ? "ok" : "warn");
+        scanChip.textContent = r.ok === r.total ? t("scanOk", { m: r.total }) : r.ok ? t("scanSome", { n: r.ok, m: r.total }) : t("scanFail");
+      }, 300);
+    }
+    $("meta").replaceChildren(...chipEls);
+  }
+
+  // ---- Scan check: decode the finished image with jsQR at several sizes, the way a phone camera sees it ----
+  // Codes lighter than their background are not inverted first, because many phone cameras don't do that either.
+  const SCAN_SIZES = [250, 300, 400, 500, 650];
+  let scanTimer;
+  function scanCheck(canvas, expected) {
+    const c = document.createElement("canvas"), g = c.getContext("2d", { willReadFrequently: true });
+    let ok = 0;
+    for (const w of SCAN_SIZES) {
+      c.width = c.height = w;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(canvas, 0, 0, w, w);
+      const r = jsQR(g.getImageData(0, 0, w, w).data, w, w, { inversionAttempts: "dontInvert" });
+      if (r && r.data === expected) ok++;
+    }
+    return { ok, total: SCAN_SIZES.length };
   }
 
   let toastT;
-  function toast(msg, bad) {
+  function toast(msg, bad, ms) {
     const el = $("toast");
     el.textContent = msg; el.style.color = bad ? "var(--warn)" : "var(--ok)";
-    clearTimeout(toastT); toastT = setTimeout(() => (el.textContent = ""), 2600);
+    clearTimeout(toastT); toastT = setTimeout(() => (el.textContent = ""), ms || 2600);
   }
   async function copyText(s, msg) {
     try { await navigator.clipboard.writeText(s); toast(msg); }
@@ -1183,7 +1314,7 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   async function batchFiles() {
     const enc = new TextEncoder(), fmt = document.querySelector('input[name="fmt"]:checked').value;
     const ecl = $("ecl").value, px = +$("px").value, col = colors(), what = $("zip-what").value, withVcf = $("zip-vcf").checked;
-    const files = [], used = new Set();
+    const files = [], used = new Set(), failed = [];
     let skipped = 0;
     for (const raw of list) {
       const d = clean(raw), base = baseName(d);
@@ -1191,25 +1322,31 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
       while (used.has(name)) name = base + "-" + i++;
       used.add(name);
       let qr;
-      try { qr = build(fmt === "vcard" ? vcard(d) : mecard(d), ecl); } catch { skipped++; continue; }
+      const text = fmt === "vcard" ? vcard(d) : mecard(d);
+      try { qr = build(text, ecl); } catch { skipped++; continue; }
+      const canvas = renderCanvas(qr, px, col);
+      if (window.jsQR) { const r = scanCheck(canvas, text); if (r.ok < r.total) failed.push(name); }
       if (what !== "svg") {
-        const blob = await new Promise((res) => renderCanvas(qr, px, col).toBlob(res, "image/png"));
+        const blob = await new Promise((res) => canvas.toBlob(res, "image/png"));
         files.push({ name: name + "-qr.png", data: new Uint8Array(await blob.arrayBuffer()) });
       }
       if (what !== "png") files.push({ name: name + "-qr.svg", data: enc.encode(svgMarkup(qr, col)) });
       if (withVcf) files.push({ name: name + ".vcf", data: enc.encode(vcard(d) + "\r\n") });
     }
     files.push({ name: "contacts.csv", data: enc.encode(toCsv(list)) });
-    return { files, skipped };
+    return { files, skipped, failed };
   }
   $("zip-dl").addEventListener("click", async () => {
     const btn = $("zip-dl");
     btn.disabled = true;
     toast(t("zipping", { n: list.length }));
     try {
-      const { files, skipped } = await batchFiles();
+      const { files, skipped, failed } = await batchFiles();
       download("qr-codes.zip", zipBlob(files));
-      if (skipped) setTimeout(() => toast(t("zipSkipped", { n: skipped }), true), 1500);
+      const notes = [];
+      if (skipped) notes.push(t("zipSkipped", { n: skipped }));
+      if (failed.length) notes.push(t("zipScanFail", { n: failed.length, names: failed.join(", ") }));
+      if (notes.length) setTimeout(() => toast(notes.join(" "), true, 10000), 1500);
     } finally { btn.disabled = false; }
   });
   if (!ALLOW_DOWNLOAD) {
@@ -1250,13 +1387,22 @@ pre { font-family: var(--f-mono); font-size: 12px; background: var(--field); bor
   $("form").addEventListener("input", update);
   $("form").addEventListener("change", update);
   $("form").addEventListener("submit", (e) => e.preventDefault());
+  // Tidy a valid phone number into international format when the field loses focus.
+  for (const id of ["cell", "work"]) {
+    $(id).addEventListener("blur", () => {
+      const p = phone($(id).value);
+      if (p.ok && $(id).value !== p.pretty) { $(id).value = p.pretty; update(); }
+    });
+  }
   $("remember").addEventListener("change", () => {
     if ($("remember").checked) { logoTooBigWarned = false; toast(t("remembered")); }
     else { try { localStorage.removeItem(STORE); } catch {} toast(t("forgotten")); }
   });
+  fillCountries();
   restore();
   applyLang();
   renderPresets();
+  fillCountries();
   update();
 })();
 </script>
