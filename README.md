@@ -6,8 +6,13 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 
 - **vCard 3.0** (all fields, works on iPhone and Android) or **MeCard** (smaller code)
 - Name, company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
-- Styles: square, rounded (connected) or dot modules, with square or rounded corner squares
-- Colors: solid, diagonal or radial gradient, and an optional separate color for the corner squares
+- Styles: square, rounded, soft, classy, vertical or horizontal bars, small squares, dots or diamonds; corner frame
+  (square, rounded, circle, leaf) and corner center (square, rounded, circle, leaf, diamond) set separately.
+  Shapes and corner combinations that failed decode tests show a warning
+- Colors: 12 tested color presets, or your own solid, diagonal or radial gradient, with an optional separate
+  color for the corner squares
+- Several contacts: download a CSV template, fill it in Excel or Google Sheets, import it, edit contacts in a list,
+  export the list as CSV, and download every code at once as a ZIP (PNG and/or SVG, plus .vcf files)
 - Optional logo in the middle (PNG, JPG or SVG), with adjustable size; error correction switches to H.
   With a transparent PNG or SVG the code wraps around the logo's shape, or pick a square background.
   Empty margins in the logo file are trimmed automatically, and wide or tall logos get a matching box
