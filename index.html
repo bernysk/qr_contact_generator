@@ -62,6 +62,8 @@ fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width
 legend { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0; margin-bottom: 10px; }
 .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .row.three { grid-template-columns: 2fr 1fr 1.4fr; }
+.row.name4 { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 0.7fr); }
+@media (max-width: 640px) { .row.name4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 480px) { .row, .row.three { grid-template-columns: minmax(0, 1fr); } }
 label { display: grid; gap: 4px; font-size: 13px; font-weight: 500; min-width: 0; }
 .label { font-size: 13px; font-weight: 500; }
@@ -159,9 +161,11 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     <form class="panel" id="form" autocomplete="off">
       <fieldset>
         <legend data-i18n="lgName">Name</legend>
-        <div class="row">
+        <div class="row name4">
+          <label for="tbefore"><span data-i18n="tbefore">Title before</span><input type="text" id="tbefore" value="Ing." placeholder="Ing., Mgr., Dr."></label>
           <label for="first"><span data-i18n="first">First name</span><input type="text" id="first" value="Jana"></label>
           <label for="last"><span data-i18n="last">Last name</span><input type="text" id="last" value="Nováková"></label>
+          <label for="tafter"><span data-i18n="tafter">Title after</span><input type="text" id="tafter" value="PhD." placeholder="PhD., MBA"></label>
         </div>
         <div class="row">
           <label for="org"><span data-i18n="org">Company</span><input type="text" id="org" value="Example Studio s.r.o."></label>
@@ -380,12 +384,12 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     en: {
       title: "Contact QR Maker",
       intro: "Fill in your details and scan the code with a phone camera to save the contact. The fields below hold an example; replace them with your own. Nothing leaves this page.",
-      lgName: "Name", first: "First name", last: "Last name", org: "Company", jobTitle: "Job title",
+      lgName: "Name", first: "First name", last: "Last name", org: "Company", jobTitle: "Job title", tbefore: "Title before", tafter: "Title after",
       lgReach: "Reach", cell: "Mobile", work: "Work phone", email: "Email", url: "Website",
       lgAddress: "Address", street: "Street", city: "City", zip: "Postal code", country: "Country", note: "Note",
       lgCode: "Code", format: "Format", ecl: "Error correction",
       eclL: "L · 7% (smallest)", eclM: "M · 15%", eclQ: "Q · 25%", eclH: "H · 30% (sturdiest)",
-      codeHint: "vCard carries every field and works on iPhone and Android. MeCard makes a smaller, easier-to-scan code but leaves out the job title.",
+      codeHint: "vCard carries every field and works on iPhone and Android. MeCard makes a smaller, easier-to-scan code but leaves out the job title and academic titles.",
       lgStyle: "Style", dots: "Dot shape", dotsSquare: "Square", dotsRounded: "Rounded (connected)", dotsDots: "Dots (scans less reliably)",
       dotsSoft: "Soft rounded", dotsClassy: "Classy (leaf corners)", dotsVbars: "Vertical bars", dotsHbars: "Horizontal bars",
       dotsSmall: "Small squares", dotsDiamond: "Diamonds (scans less reliably)",
@@ -446,12 +450,12 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     sk: {
       title: "Generátor QR vizitky",
       intro: "Vyplňte svoje údaje a naskenujte kód fotoaparátom mobilu, aby sa kontakt uložil. Polia obsahujú ukážku, nahraďte ju vlastnými údajmi. Nič neopustí túto stránku.",
-      lgName: "Meno", first: "Meno", last: "Priezvisko", org: "Firma", jobTitle: "Pozícia",
+      lgName: "Meno", first: "Meno", last: "Priezvisko", org: "Firma", jobTitle: "Pozícia", tbefore: "Titul pred", tafter: "Titul za",
       lgReach: "Kontakt", cell: "Mobil", work: "Telefón do práce", email: "E-mail", url: "Web",
       lgAddress: "Adresa", street: "Ulica", city: "Mesto", zip: "PSČ", country: "Krajina", note: "Poznámka",
       lgCode: "Kód", format: "Formát", ecl: "Oprava chýb",
       eclL: "L · 7 % (najmenší)", eclM: "M · 15 %", eclQ: "Q · 25 %", eclH: "H · 30 % (najodolnejší)",
-      codeHint: "vCard obsahuje všetky polia a funguje na iPhone aj Androide. MeCard vytvorí menší a ľahšie čitateľný kód, ale vynechá pozíciu.",
+      codeHint: "vCard obsahuje všetky polia a funguje na iPhone aj Androide. MeCard vytvorí menší a ľahšie čitateľný kód, ale vynechá pozíciu aj akademické tituly.",
       lgStyle: "Vzhľad", dots: "Tvar bodiek", dotsSquare: "Štvorce", dotsRounded: "Zaoblené (spojené)", dotsDots: "Bodky (horšie sa skenujú)",
       dotsSoft: "Jemne zaoblené", dotsClassy: "Elegantné (lístkové rohy)", dotsVbars: "Zvislé pruhy", dotsHbars: "Vodorovné pruhy",
       dotsSmall: "Malé štvorce", dotsDiamond: "Kosoštvorce (horšie sa skenujú)",
@@ -512,7 +516,13 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   };
 
   const $ = (id) => document.getElementById(id);
-  const fields = ["first","last","org","title","cell","work","email","url","street","city","zip","country","note"];
+  const fields = ["tbefore","first","last","tafter","org","title","cell","work","email","url","street","city","zip","country","note"];
+  // Name as people write it, e.g. "Ing. Jana Nováková, PhD." (Slovak and Czech put a comma before titles after the name).
+  function fullName(d) {
+    if (!d.first && !d.last) return "";
+    const n = [d.tbefore, d.first, d.last].filter(Boolean).join(" ");
+    return d.tafter ? n + ", " + d.tafter : n;
+  }
   if (window.qrcode && qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) {
     qrcode.stringToBytes = qrcode.stringToBytesFuncs["UTF-8"];
   }
@@ -629,8 +639,9 @@ input[aria-invalid="true"] { border-color: var(--warn); }
 
   function vcard(d) {
     const L = ["BEGIN:VCARD", "VERSION:3.0"];
-    L.push("N:" + [escV(d.last), escV(d.first), "", "", ""].join(";"));
-    L.push("FN:" + escV([d.first, d.last].filter(Boolean).join(" ") || d.org || "Contact"));
+    // N is family;given;additional;honorific prefix;honorific suffix, so titles get their own slots.
+    L.push("N:" + [escV(d.last), escV(d.first), "", escV(d.tbefore), escV(d.tafter)].join(";"));
+    L.push("FN:" + escV(fullName(d) || d.org || "Contact"));
     if (d.org) L.push("ORG:" + escV(d.org));
     if (d.title) L.push("TITLE:" + escV(d.title));
     if (d.cell) L.push("TEL;TYPE=CELL:" + tel(d.cell));
@@ -975,7 +986,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     $("eyecolor-wrap").hidden = !col.eye;
     $("logo-size-val").textContent = $("logo-size").value + (lang === "sk" ? " %" : "%");
     $("payload").textContent = text;
-    $("who-name").textContent = [d.first, d.last].filter(Boolean).join(" ") || d.org || t("noName");
+    $("who-name").textContent = fullName(d) || d.org || t("noName");
     $("who-sub").textContent = [d.title, d.org].filter(Boolean).join(" · ") || d.email || "";
     box.style.background = col.bg;
 
@@ -1170,10 +1181,12 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   const formValues = () => Object.fromEntries(fields.map((f) => [f, $(f).value]));
   const clean = (c) => Object.fromEntries(fields.map((f) => [f, String(c[f] || "").trim()]));
   // CSV column names, in template order. Imports also accept common English and Slovak header names.
-  const CSV_COLS = [["first", "first_name"], ["last", "last_name"], ["org", "company"], ["title", "job_title"], ["cell", "mobile"],
+  const CSV_COLS = [["tbefore", "title_before"], ["first", "first_name"], ["last", "last_name"], ["tafter", "title_after"], ["org", "company"], ["title", "job_title"], ["cell", "mobile"],
     ["work", "work_phone"], ["email", "email"], ["url", "website"], ["street", "street"], ["city", "city"], ["zip", "postal_code"],
     ["country", "country"], ["note", "note"]];
   const ALIASES = {
+    tbefore: ["titlebefore", "prefix", "honorificprefix", "titulpred", "titulpredmenom"],
+    tafter: ["titleafter", "suffix", "honorificsuffix", "titulza", "tituluza", "titulzamenom"],
     first: ["firstname", "first", "givenname", "name", "meno", "krstnemeno"], last: ["lastname", "last", "surname", "familyname", "priezvisko"],
     org: ["company", "organization", "organisation", "org", "firma", "spolocnost", "organizacia"], title: ["jobtitle", "title", "position", "role", "pozicia", "funkcia"],
     cell: ["mobile", "cell", "mobilephone", "phone", "mobil", "telefon", "tel"], work: ["workphone", "work", "officephone", "telefondoprace", "pracovnytelefon"],
@@ -1220,8 +1233,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     return "﻿" + lines.join("\r\n") + "\r\n";
   }
   const TEMPLATE_ROWS = [
-    { first: "Jana", last: "Nováková", org: "Example Studio s.r.o.", title: "Project Manager", cell: "+421 900 123 456", work: "", email: "jana@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
-    { first: "Peter", last: "Horák", org: "Example Studio s.r.o.", title: "Designer", cell: "+421 900 654 321", work: "+421 2 1234 5678", email: "peter@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
+    { tbefore: "Ing.", first: "Jana", last: "Nováková", tafter: "PhD.", org: "Example Studio s.r.o.", title: "Project Manager", cell: "+421 900 123 456", work: "", email: "jana@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
+    { tbefore: "Mgr.", first: "Peter", last: "Horák", tafter: "", org: "Example Studio s.r.o.", title: "Designer", cell: "+421 900 654 321", work: "+421 2 1234 5678", email: "peter@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
   ];
 
   function renderList() {
@@ -1242,7 +1255,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
         li.append(pick, del); ul.append(li);
       }
       li.dataset.i = i;
-      const d = clean(c), name = [d.first, d.last].filter(Boolean).join(" ") || d.org || t("noName");
+      const d = clean(c), name = fullName(d) || d.org || t("noName");
       li.querySelector("strong").textContent = name;
       li.querySelector(".pick span").textContent = [d.title, d.org, d.email].filter(Boolean).join(" · ");
       li.querySelector(".del").setAttribute("aria-label", t("remove", { name }));

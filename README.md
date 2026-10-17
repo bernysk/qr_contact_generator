@@ -5,7 +5,8 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 **Try it: https://bernysk.github.io/qr_contact_generator/**
 
 - **vCard 3.0** (all fields, works on iPhone and Android) or **MeCard** (smaller code)
-- Name, company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
+- Name with academic titles before and after (stored in the vCard honorific prefix and suffix, shown as
+  "Ing. Jana Nováková, PhD."), company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
 - Styles: square, rounded, soft, classy, vertical or horizontal bars, small squares, dots or diamonds; corner frame
   (square, rounded, circle, leaf) and corner center (square, rounded, circle, leaf, diamond) set separately.
   Shapes and corner combinations that failed decode tests show a warning
