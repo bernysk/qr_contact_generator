@@ -5,9 +5,9 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 **Try it: https://bernysk.github.io/qr_contact_generator/**
 
 - **vCard 3.0** (all fields, works on iPhone and Android) or **MeCard** (smaller code)
-- Name with academic titles before and after, stored in the vCard honorific prefix and suffix. Android only reads
-  the display name, so a setting chooses whether it includes the titles (Android shows them, but may file "Ing."
-  as the first name) or not (correct name fields, no titles on Android), company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
+- Name with middle name and academic titles before and after, stored in the vCard name field (titles as honorific
+  prefix and suffix). Android doesn't recognise Slovak titles and saves "Ing. Jana" as the first name, so a
+  "Leave titles out (for Android)" option removes them from the code; iPhone shows them only while it's off, company, job title, phones, email, website, address, note; full UTF-8 (č, š, ž …)
 - Styles: square, rounded, soft, classy, vertical or horizontal bars, small squares, dots or diamonds; corner frame
   (square, rounded, circle, leaf) and corner center (square, rounded, circle, leaf, diamond) set separately.
   Shapes and corner combinations that failed decode tests show a warning

@@ -61,8 +61,14 @@ fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 12px; min-width
 legend { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); padding: 0; margin-bottom: 10px; }
 .row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 .row.three { grid-template-columns: 2fr 1fr 1.4fr; }
-.row.name4 { grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 0.7fr); }
-@media (max-width: 640px) { .row.name4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+/* Name: title before, first, middle on the first line; last name (wider) and title after on the second. */
+.row.name4 { grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr) minmax(0, 1fr); }
+.row.name4 > :nth-child(4) { grid-column: span 2; }
+@media (max-width: 640px) {
+  .row.name4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .row.name4 > :nth-child(4) { grid-column: auto; }
+  .row.name4 > :last-child { grid-column: 1 / -1; }
+}
 .row.tri { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 @media (max-width: 560px) { .row.tri { grid-template-columns: minmax(0, 1fr); } }
 .grad { display: grid; gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
@@ -167,11 +173,12 @@ input[aria-invalid="true"] { border-color: var(--warn); }
         <div class="row name4">
           <label for="tbefore"><span data-i18n="tbefore">Title before</span><input type="text" id="tbefore" value="Ing." placeholder="Ing., Mgr., Dr."></label>
           <label for="first"><span data-i18n="first">First name</span><input type="text" id="first" value="Jana"></label>
+          <label for="middle"><span data-i18n="middle">Middle name</span><input type="text" id="middle" value=""></label>
           <label for="last"><span data-i18n="last">Last name</span><input type="text" id="last" value="Nováková"></label>
           <label for="tafter"><span data-i18n="tafter">Title after</span><input type="text" id="tafter" value="PhD." placeholder="PhD., MBA"></label>
         </div>
-        <label class="check" for="fntitles"><input type="checkbox" id="fntitles" checked><span data-i18n="fnTitles">Show titles on Android phones</span></label>
-        <p class="hint" data-i18n="fnTitlesHint">Android reads only the display name. With this on it shows “Ing. Jana Nováková, PhD.”, but may file “Ing.” as the first name. With it off the name fields are right but Android shows no titles. iPhone shows titles either way.</p>
+        <label class="check" for="notitles"><input type="checkbox" id="notitles"><span data-i18n="noTitles">Leave titles out (for Android)</span></label>
+        <p class="hint" data-i18n="noTitlesHint">Android doesn’t recognise Slovak titles and saves “Ing. Jana” as the first name. Tick this to leave the titles out of the code, so Android gets the name right. iPhone puts titles in their own fields, so it shows them only while this is off. The preview here always shows them.</p>
         <div class="row">
           <label for="org"><span data-i18n="org">Company</span><input type="text" id="org" value="Example Studio s.r.o."></label>
           <label for="title"><span data-i18n="jobTitle">Job title</span><input type="text" id="title" value="Project Manager"></label>
@@ -405,7 +412,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     en: {
       title: "Contact QR Maker",
       intro: "Fill in your details and scan the code with a phone camera to save the contact. The fields below hold an example; replace them with your own. Nothing leaves this page.",
-      lgName: "Name", first: "First name", last: "Last name", org: "Company", jobTitle: "Job title", tbefore: "Title before", tafter: "Title after",
+      lgName: "Name", first: "First name", middle: "Middle name", last: "Last name", org: "Company", jobTitle: "Job title", tbefore: "Title before", tafter: "Title after",
       lgReach: "Reach", cell: "Mobile", work: "Work phone", email: "Email", url: "Website",
       lgAddress: "Address", street: "Street", city: "City", zip: "Postal code", country: "Country", note: "Note",
       lgCode: "Code", format: "Format", ecl: "Error correction",
@@ -425,8 +432,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanFail: "Scan check: does not read", zipScanFail: "Failed the scan check ({n}): {names}. Shorten their details or print them larger.",
       phonecc: "Phone numbers from", phoneccHint: "Numbers without a country code get this one, so they also work when dialled from abroad.",
       phoneConv: "Add the country code to local numbers", phoneConvOff: "Numbers go into the code exactly as typed, without spaces.",
-      fnTitles: "Show titles on Android phones",
-      fnTitlesHint: "Android reads only the display name. With this on it shows “Ing. Jana Nováková, PhD.”, but may file “Ing.” as the first name. With it off the name fields are right but Android shows no titles. iPhone shows titles either way.",
+      noTitles: "Leave titles out (for Android)",
+      noTitlesHint: "Android doesn’t recognise Slovak titles and saves “Ing. Jana” as the first name. Tick this to leave the titles out of the code, so Android gets the name right. iPhone puts titles in their own fields, so it shows them only while this is off. The preview here always shows them.",
       suggested: "Suggested", fromAddress: "address country", zone1: "1 · North America and Caribbean", zone2: "2 · Africa and Atlantic islands",
       zone34: "3–4 · Europe", zone5: "5 · Central and South America", zone6: "6 · Southeast Asia and Oceania", zone7: "7 · Russia and Kazakhstan",
       zone8: "8 · East Asia", zone9: "9 · Middle East, Central and South Asia",
@@ -480,7 +487,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     sk: {
       title: "Generátor QR vizitky",
       intro: "Vyplňte svoje údaje a naskenujte kód fotoaparátom mobilu, aby sa kontakt uložil. Polia obsahujú ukážku, nahraďte ju vlastnými údajmi. Nič neopustí túto stránku.",
-      lgName: "Meno", first: "Meno", last: "Priezvisko", org: "Firma", jobTitle: "Pozícia", tbefore: "Titul pred", tafter: "Titul za",
+      lgName: "Meno", first: "Meno", middle: "Druhé meno", last: "Priezvisko", org: "Firma", jobTitle: "Pozícia", tbefore: "Titul pred", tafter: "Titul za",
       lgReach: "Kontakt", cell: "Mobil", work: "Telefón do práce", email: "E-mail", url: "Web",
       lgAddress: "Adresa", street: "Ulica", city: "Mesto", zip: "PSČ", country: "Krajina", note: "Poznámka",
       lgCode: "Kód", format: "Formát", ecl: "Oprava chýb",
@@ -500,8 +507,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       scanFail: "Kontrola: kód sa nenačíta", zipScanFail: "Kontrolou neprešli ({n}): {names}. Skráťte ich údaje alebo ich tlačte väčšie.",
       phonecc: "Telefónne čísla z krajiny", phoneccHint: "Čísla bez predvoľby dostanú túto, aby fungovali aj pri volaní zo zahraničia.",
       phoneConv: "Pridať k miestnym číslam predvoľbu krajiny", phoneConvOff: "Čísla idú do kódu presne tak, ako sú napísané, bez medzier.",
-      fnTitles: "Zobraziť tituly na telefónoch s Androidom",
-      fnTitlesHint: "Android číta iba zobrazované meno. So zapnutou voľbou ukáže „Ing. Jana Nováková, PhD.“, ale „Ing.“ môže uložiť ako krstné meno. S vypnutou sú časti mena správne, no Android tituly neukáže. iPhone ukáže tituly v oboch prípadoch.",
+      noTitles: "Vynechať tituly (pre Android)",
+      noTitlesHint: "Android nepozná slovenské tituly a uloží „Ing. Jana“ ako krstné meno. Zaškrtnite, ak chcete tituly z kódu vynechať, aby Android uložil meno správne. iPhone dáva tituly do samostatných polí, takže ich ukáže, len keď je táto voľba vypnutá. Náhľad tu tituly ukazuje vždy.",
       suggested: "Navrhované", fromAddress: "krajina z adresy", zone1: "1 · Severná Amerika a Karibik", zone2: "2 · Afrika a atlantické ostrovy",
       zone34: "3–4 · Európa", zone5: "5 · Stredná a Južná Amerika", zone6: "6 · Juhovýchodná Ázia a Oceánia", zone7: "7 · Rusko a Kazachstan",
       zone8: "8 · Východná Ázia", zone9: "9 · Blízky východ, Stredná a Južná Ázia",
@@ -555,11 +562,11 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   };
 
   const $ = (id) => document.getElementById(id);
-  const fields = ["tbefore","first","last","tafter","org","title","cell","work","email","url","street","city","zip","country","note"];
+  const fields = ["tbefore","first","middle","last","tafter","org","title","cell","work","email","url","street","city","zip","country","note"];
   // Name as people write it, e.g. "Ing. Jana Nováková, PhD." (Slovak and Czech put a comma before titles after the name).
   function fullName(d) {
     if (!d.first && !d.last) return "";
-    const n = [d.tbefore, d.first, d.last].filter(Boolean).join(" ");
+    const n = [d.tbefore, d.first, d.middle, d.last].filter(Boolean).join(" ");
     return d.tafter ? n + ", " + d.tafter : n;
   }
   if (window.qrcode && qrcode.stringToBytesFuncs && qrcode.stringToBytesFuncs["UTF-8"]) {
@@ -751,12 +758,15 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     // ("PhD., MBA") become a comma-separated list, which is how N holds more than one value.
     const titles = (s) => s.split(",").map((x) => plain(x.trim())).filter(Boolean).join(",");
     const name = (s) => plain(s).replace(/,/g, " ");
-    L.push("N:" + [name(d.last), name(d.first), "", titles(d.tbefore), titles(d.tafter)].join(";"));
+    // Android glues N back into one line and splits it with rules that only know English prefixes, so "Ing." ends up
+    // in the first name ("Ing. Jana") whether the titles are in N, in FN or both. "Leave titles out" removes them from both.
+    const noTitles = $("notitles").checked;
+    L.push("N:" + [name(d.last), name(d.first), name(d.middle || ""), noTitles ? "" : titles(d.tbefore), noTitles ? "" : titles(d.tafter)].join(";"));
     // FN is the only name Google's "Add to contacts" reads; it ignores N and splits FN on spaces itself. With titles
     // in FN, Android shows them but may file a title as a name part (the Pixel made "prof. MUDr. Jana Nováková, PhD.,
     // MBA" first name "MUDr. Jana", surname "PhD"); without them the parts are right but no titles show. The person
     // chooses. Readers that use N (iPhone and most others) show the titles either way.
-    const fnName = $("fntitles").checked ? fullName(d) : [d.first, d.last].filter(Boolean).join(" ");
+    const fnName = noTitles ? [d.first, d.middle, d.last].filter(Boolean).join(" ") : fullName(d);
     L.push("FN:" + plain(fnName || d.org || "Contact"));
     // ORG is "company;department"; a semicolon typed in the company name keeps that meaning.
     if (d.org) L.push("ORG:" + d.org.split(";").map((x) => plain(x.trim())).filter(Boolean).join(";"));
@@ -775,7 +785,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   function mecard(d) {
     const p = [];
     // MeCard N is "surname,first name": escape each part, but the comma between them is the separator.
-    const name = [d.last, d.first].filter(Boolean).map(escM).join(",");
+    const name = [d.last, [d.first, d.middle].filter(Boolean).join(" ")].filter(Boolean).map(escM).join(",");
     p.push("N:" + (name || escM(d.org || "Contact")));
     if (d.org) p.push("ORG:" + escM(d.org));
     if (d.cell) p.push("TEL:" + tel(d.cell));
@@ -1071,7 +1081,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       eyeown: $("eyeown").checked,
       zipVcf: $("zip-vcf").checked,
       phoneConv: $("phoneconv").checked,
-      fnTitles: $("fntitles").checked,
+      noTitles: $("notitles").checked,
       list,
       logo: logo ? logo.src : null,
     };
@@ -1104,7 +1114,7 @@ input[aria-invalid="true"] { border-color: var(--warn); }
       OPTS.forEach((id) => { if (opts[id] != null) setSaved($(id), opts[id]); });
       $("eyeown").checked = !!data.eyeown;
       if (typeof data.phoneConv === "boolean") $("phoneconv").checked = data.phoneConv;
-      if (typeof data.fnTitles === "boolean") $("fntitles").checked = data.fnTitles;
+      if (typeof data.noTitles === "boolean") $("notitles").checked = data.noTitles;
       if (typeof data.zipVcf === "boolean") $("zip-vcf").checked = data.zipVcf;
       if (Array.isArray(data.list)) list = data.list.filter((c) => c && typeof c === "object").map(clean);
       // Older saves had one "eyes" setting for the whole corner; use it for the center too.
@@ -1349,13 +1359,14 @@ input[aria-invalid="true"] { border-color: var(--warn); }
   const oneLine = (f, s) => (f === "note" ? s : s.replace(CONTROL, "").replace(/\s*[\r\n]+\s*/g, " "));
   const clean = (c) => Object.fromEntries(fields.map((f) => [f, oneLine(f, String(c[f] || "")).trim()]));
   // CSV column names, in template order. Imports also accept common English and Slovak header names.
-  const CSV_COLS = [["tbefore", "title_before"], ["first", "first_name"], ["last", "last_name"], ["tafter", "title_after"], ["org", "company"], ["title", "job_title"], ["cell", "mobile"],
+  const CSV_COLS = [["tbefore", "title_before"], ["first", "first_name"], ["middle", "middle_name"], ["last", "last_name"], ["tafter", "title_after"], ["org", "company"], ["title", "job_title"], ["cell", "mobile"],
     ["work", "work_phone"], ["email", "email"], ["url", "website"], ["street", "street"], ["city", "city"], ["zip", "postal_code"],
     ["country", "country"], ["note", "note"]];
   const ALIASES = {
     tbefore: ["titlebefore", "prefix", "honorificprefix", "titulpred", "titulpredmenom"],
     tafter: ["titleafter", "suffix", "honorificsuffix", "titulza", "tituluza", "titulzamenom"],
-    first: ["firstname", "first", "givenname", "name", "meno", "krstnemeno"], last: ["lastname", "last", "surname", "familyname", "priezvisko"],
+    first: ["firstname", "first", "givenname", "name", "meno", "krstnemeno"],
+    middle: ["middlename", "middle", "additionalname", "druhemeno", "strednemeno"], last: ["lastname", "last", "surname", "familyname", "priezvisko"],
     org: ["company", "organization", "organisation", "org", "firma", "spolocnost", "organizacia"], title: ["jobtitle", "title", "position", "role", "pozicia", "funkcia"],
     cell: ["mobile", "cell", "mobilephone", "phone", "mobil", "telefon", "tel"], work: ["workphone", "work", "officephone", "telefondoprace", "pracovnytelefon"],
     email: ["email", "mail", "emailaddress"], url: ["website", "web", "url", "www", "webstranka"], street: ["street", "address", "ulica", "adresa"],
@@ -1405,8 +1416,8 @@ input[aria-invalid="true"] { border-color: var(--warn); }
     return "﻿" + lines.join("\r\n") + "\r\n";
   }
   const TEMPLATE_ROWS = [
-    { tbefore: "Ing.", first: "Jana", last: "Nováková", tafter: "PhD.", org: "Example Studio s.r.o.", title: "Project Manager", cell: "+421 900 123 456", work: "", email: "jana@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
-    { tbefore: "Mgr.", first: "Peter", last: "Horák", tafter: "", org: "Example Studio s.r.o.", title: "Designer", cell: "+421 900 654 321", work: "+421 2 1234 5678", email: "peter@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
+    { tbefore: "Ing.", first: "Jana", middle: "", last: "Nováková", tafter: "PhD.", org: "Example Studio s.r.o.", title: "Project Manager", cell: "+421 900 123 456", work: "", email: "jana@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
+    { tbefore: "Mgr.", first: "Peter", middle: "Pavol", last: "Horák", tafter: "", org: "Example Studio s.r.o.", title: "Designer", cell: "+421 900 654 321", work: "+421 2 1234 5678", email: "peter@example.com", url: "https://example.com", street: "Hlavná 12", city: "Bratislava", zip: "811 01", country: "Slovakia", note: "" },
   ];
 
   function renderList() {
