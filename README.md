@@ -30,6 +30,8 @@ Make a QR code for your contact details. Scan it with a phone camera to save the
 - Download PNG, SVG or a `.vcf` contact file; or copy the image, SVG or contact text
 - English and Slovak interface (follows your browser language, switch in the top corner)
 
+See [CHANGELOG.md](CHANGELOG.md) for what changed and when.
+
 ## Privacy
 
 Everything runs in your browser. There is no server, no tracking and no external requests:
